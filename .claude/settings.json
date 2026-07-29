@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(make analyze)",
+      "Bash(make fmt)",
+      "Bash(make fmt-check)",
+      "Bash(make test)",
+      "Bash(make test *)",
+      "Bash(make test-coverage)",
+      "Bash(make check-deps)",
+      "Bash(make ci)",
+      "Bash(make get)",
+      "Bash(make l10n)",
+      "Bash(make codegen)",
+      "Bash(make codegen *)",
+      "Bash(make help)",
+      "Bash(make doctor)",
+      "Bash(fvm flutter analyze *)",
+      "Bash(fvm flutter test *)",
+      "Bash(fvm flutter --version)",
+      "Bash(fvm dart --version)",
+      "Bash(fvm dart format *)",
+      "Bash(fvm dart run tools/*)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(git ls-files *)"
+    ],
+    "ask": [
+      "Bash(make clean)",
+      "Bash(make rebuild)",
+      "Bash(make apk *)",
+      "Bash(make aab *)",
+      "Bash(make ipa *)",
+      "Bash(make rename *)",
+      "Bash(fvm use *)",
+      "Bash(fvm install *)",
+      "Bash(git commit *)",
+      "Bash(git push *)"
+    ],
+    "deny": [
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(git reset --hard *)",
+      "Bash(rm -rf *)",
+      "Read(./app/env_config/**/dart_defines.json)",
+      "Read(./android/key.properties)",
+      "Read(./android/**/*.jks)",
+      "Read(./android/**/*.keystore)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format-dart.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

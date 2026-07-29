@@ -1,0 +1,54 @@
+---
+description: Makefile, CI, shell scripts and the tools/ directory
+globs: "Makefile,**/*.sh,.github/workflows/*.yml,tools/**/*.dart,.githooks/*"
+alwaysApply: false
+---
+
+# The Makefile owns the package lists
+
+`PACKAGES`, `CODEGEN_PACKAGES` and `TEST_PACKAGES` live in the `Makefile` and
+nowhere else. `.github/workflows/ci.yml` calls `make` targets and overrides
+`FLUTTER=flutter DART=dart`, because runners install the SDK directly instead of
+through FVM.
+
+Do not reintroduce a package list in the workflow, a script, or a second
+variable. It used to inline its own `for pkg in ...` loops; they drifted from
+`CODEGEN_PACKAGES`, CI stopped generating `core_ui/lib/di.module.dart`, and the
+barrel kept exporting a file that no longer existed. Duplicating a list is how
+the duplicate goes stale.
+
+If a new target needs the packages, use the existing variables.
+
+# Running commands
+
+- Run a command when it verifies something or was asked for — not "to be safe".
+  `make ci` is minutes; say what you expect it to print before you start it.
+- **Never run a destructive command unprompted**: `make clean`, `make rebuild`,
+  `git reset --hard`, `git push --force`, any `rm -rf`. Ask.
+- Long-running work (build, codegen, test): state the expected duration and what
+  in the output actually answers the question.
+
+# tools/
+
+- `check_dependencies.dart` is the architecture, executable. It checks import
+  boundaries, the pubspec `workspace:` list, and the Makefile's codegen and test
+  lists — in both directions, so a stale entry fails as loudly as a missing one.
+  Adding an allowed edge is an architecture change: do it deliberately, in the
+  same commit as the import, so a reviewer sees the decision and not just a new
+  `import`.
+- These scripts run with plain `dart run`, **before** `pub get` has resolved
+  anything. Keep them dependency-free — that is why the pubspec parsing uses a
+  regex rather than a YAML package.
+- `.githooks/pre-push` runs `fmt-check` + `analyze` only. It is deliberately not
+  the full gate: a hook slow enough to be resented gets bypassed with
+  `--no-verify`, at which point it protects nothing. Do not add to it.
+
+# The dotfiles are load-bearing
+
+`.gitignore`, `.fvmrc`, `.github/`, `.githooks/`, `.vscode/`, `.claude/` and
+`.cursor/` carry the SDK pin, the CI pipeline, the guardrails and the ignore
+rules. Losing them breaks nothing loudly, which is the problem — it has already
+happened once, via `cp -r flutter_base/* …`, and the missing `.gitignore`
+committed 575 MB of build caches and Dart snapshots before anyone noticed.
+
+Copy this repository with `git clone`, or `cp -a src/. dest/`.

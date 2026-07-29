@@ -1,0 +1,55 @@
+---
+description: Testing conventions
+globs: "**/test/**/*.dart"
+alwaysApply: false
+---
+
+# Conventions
+
+- **Hand-written fakes, no mocking library.** There is no `mockito` or
+  `mocktail` in this workspace and that is deliberate. Collaborators are small
+  interfaces (`SessionStore`, `AuthRepository`), so `implements` is a few lines
+  and produces a fake the compiler keeps honest when the interface changes — a
+  generated mock just keeps compiling.
+- **Exercise the production class over the fake, not a fake of the class.**
+  `app/test/fakes/null_session.dart` builds the real `SignOutUseCase` over null
+  collaborators; a fake use case would have tested nothing about the wiring.
+- Test the behaviour, not the implementation. A test that asserts which private
+  method ran fails on every refactor and catches no bugs.
+- Cover the failure paths. Every repository returns `Result<T>`; the `Err`
+  branch is the one that ships broken.
+
+# Where a test earns its place
+
+- **Interceptors, monitors, and anything with a timer.** Both real bugs found in
+  this repo's transport layer were found by tests written after the fact:
+  `RetryInterceptor` performed 2 attempts when configured for 3, and
+  `ConnectivityMonitorImpl` raised the offline banner ~1.2s *after* the network
+  came back. Neither is visible by reading the code.
+- **Wiring, routing, theming, startup.** `app/test/app_smoke_test.dart` boots
+  the real `Bootstrap.run()` and pumps the real `App`; extend it. The rest of
+  the gate has passed on a build that white-screened on the first frame, because
+  nothing else in it renders a widget.
+- **Every DI module.** `app/test/injection_test.dart` asserts one type per
+  external module. A package left out of `externalPackageModulesBefore`
+  registers nothing and fails only at runtime.
+
+# Gates
+
+- `make check-deps` fails if a workspace package has no `*_test.dart`, or has
+  tests that `TEST_PACKAGES` never runs. A new package arrives with a test.
+- `make test-coverage` enforces a workspace threshold **and** a per-package
+  floor, so an easy-to-cover pure-Dart package cannot carry an untested one.
+- The debt lists — `packagesWithoutTests` in `tools/check_dependencies.dart`,
+  `packageExemptions` in `tools/coverage_summary.dart` — are both empty. Adding
+  an entry is a decision to record, not a way to make a build pass. Lowering a
+  threshold is never the fix.
+
+# Running
+
+```
+make test                              # every package
+make test PKG=core/core_storage        # one package
+make test PKG=app ARGS="--name boots"  # one test
+make test-coverage
+```

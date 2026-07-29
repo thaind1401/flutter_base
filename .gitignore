@@ -1,0 +1,69 @@
+# Dart / Flutter
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+coverage/
+*.iml
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Generated code is never committed. A fresh clone runs `make setup`.
+*.g.dart
+*.config.dart
+*.module.dart
+*.gr.dart
+*.mocks.dart
+lib/generated/
+lib/src/l10n/generated/
+
+# Per-package lockfiles: this is a pub workspace, only the root lockfile counts.
+*/pubspec.lock
+
+# FVM
+.fvm/
+.fvm/flutter_sdk
+.fvm/versions
+
+# IDE — the shared VS Code config is tracked so a clone gets working launch
+# configurations and the right SDK path; personal state is not.
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# AI assistants — the shared rules, permissions and hooks are tracked so every
+# clone gets the same guardrails. Personal permission grants are not.
+.claude/settings.local.json
+
+# macOS
+.DS_Store
+
+# Android
+android/.gradle/
+android/local.properties
+android/key.properties
+android/app/*.jks
+android/app/*.keystore
+**/android/**/gradle-wrapper.jar
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Runner.xcworkspace/xcuserdata/
+ios/Runner.xcodeproj/xcuserdata/
+ios/Runner.xcodeproj/project.xcworkspace/xcuserdata/
+*.ipa
+
+# Build outputs collected by `make rel-*`
+releases/
+
+# Secrets — env files hold real base URLs/keys per project; only samples are tracked.
+app/env_config/**/dart_defines.json
+!app/env_config/**/dart_defines.sample.json

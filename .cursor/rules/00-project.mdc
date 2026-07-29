@@ -1,0 +1,61 @@
+---
+description: Orientation and working agreement — applies to every request
+alwaysApply: true
+---
+
+# Source of truth
+
+The contract for this repository is `CLAUDE.md`, and the reasoning behind it is
+in `docs/`. Cursor does not load `CLAUDE.md` on its own, so it is attached here:
+
+@CLAUDE.md
+
+If that reference did not resolve, open `CLAUDE.md` and read it before your
+first edit. Everything below is the working agreement, which is *not* in that
+file. Nothing below restates it — one rule, one home, or the two copies drift.
+
+Read on demand:
+
+- `docs/architecture.md` — layer graph, data flow, failure handling, state
+- `docs/adding_a_feature.md` — the checklist for a new package
+- `docs/adr/` — **read the relevant ADR before proposing a change to an
+  architectural pattern.** Each one records what was rejected and why.
+
+# Working agreement
+
+- **Do the thing asked.** No opportunistic refactors, no new dependencies, no
+  "while I was in here". Genuine improvements outside the request go in a
+  separate "Optional" section at the end, not into the diff.
+- **Missing information: ask 1–3 questions, or offer 2–3 options.** Do not
+  guess at requirements and build on the guess.
+- **Before a broad multi-file change**, summarize the plan in 2–4 bullets and
+  name the risk. Wait for a reply if the risk is real.
+- **Prefer small, verifiable changes.** Avoid mass renames and reformatting
+  unless that is the task.
+- Read the files you are about to change. Match the surrounding style — comment
+  density, naming, idiom — rather than importing conventions from elsewhere.
+
+# Verification
+
+Do not claim a command passed unless you ran it and can show the output. "This
+should analyze cleanly" is a guess; say so, or run `make analyze`.
+
+Every non-trivial change ends with a validation plan: the commands, and what
+their output should say. The gate is `make ci` (fmt-check + analyze + test +
+check-deps).
+
+**Green is necessary, not sufficient.** The full gate has passed on a build that
+white-screened on the first frame — nothing in it renders a widget. If a change
+touches DI, routing, theming, or startup, either run the app or extend
+`app/test/app_smoke_test.dart`. If you did neither, say so.
+
+# Security
+
+- Never put credentials, tokens, internal endpoints, or personal data into a
+  prompt, a commit message, a comment, or generated docs.
+- `app/env_config/**/dart_defines.json` holds real URLs and keys and is
+  gitignored. Read the `.sample.json` next to it instead.
+- Do not copy code from sources with unclear licensing. Describe the idea and
+  re-implement it against this codebase's own patterns.
+- Do not add logging of request or response bodies. `LogRedactor` is a safety
+  net, not permission.

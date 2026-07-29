@@ -1,0 +1,60 @@
+---
+description: Where Dart code goes and what it extends
+globs: "**/*.dart"
+alwaysApply: false
+---
+
+# Placement
+
+Before writing a new file, decide which package it belongs in. The layer graph
+is in `docs/architecture.md`; the edges are enforced by
+`tools/check_dependencies.dart`, so getting this wrong fails `make check-deps`
+rather than merely reading badly.
+
+| You are writing | It goes in | It extends / implements |
+|---|---|---|
+| An entity, a validator, a `Failure` | `core_kit` | — (no Flutter import, ever) |
+| A use case | the feature's `domain/use_cases/` | `UseCase<P, R>` |
+| A repository interface | the feature's `domain/repositories/` | `abstract interface class` |
+| A repository implementation | the feature's `data/repositories/` | `BaseRepository` |
+| A Retrofit data source | the feature's `data/data_sources/` | `@RestApi` |
+| A bloc or cubit | the feature's `presentation/<screen>/` | `BaseBloc` / `BaseCubit` |
+| A reusable widget or token | `core_ui` | — |
+| Anything shared by two features | a core package, behind an interface | — |
+
+A feature never imports another feature. If two need to talk, the answer is a
+contract in a core package — say so rather than widening the dependency table.
+
+# Idioms this repo uses
+
+- **Fallible work returns `Result<T>`.** `BaseRepository.guard` produces it. A
+  `try/catch` above the data layer means something escaped its boundary; fix the
+  boundary, not the caller.
+- **`Failure` is sealed**, so `switch` on it exhaustively and let the compiler
+  find the missing case. Do not add a `default:` — that is how a new failure
+  type ships silently mishandled.
+- **Use case parameters are typed records**: `typedef P = ({String id});`.
+  Never `Map<String, dynamic>`.
+- **One-shot outcomes are effects** (`emitEffect`), never state flags. Modelled
+  as state, an effect must be cleared after it fires, and the missed clear
+  re-fires the toast on every rebuild.
+- **`ViewState<T>` is sealed; `PagedViewState<T>` is deliberately not.** Do not
+  "fix" the second one — a list holds several conditions at once, and its
+  invariants live in its transition methods.
+- **Pick the bloc event transformer on purpose**: `droppable()` for submit and
+  load-more, `restartable()` for refresh and search. The default is wrong for
+  all four.
+- **No literals in widgets.** `context.colors.*`, `context.dimens.*`,
+  `context.textStyles.*`. A missing value is a missing token — add it to the
+  token class rather than hard-coding once.
+- Strict null safety. Avoid `dynamic` and untyped `var`. Prefer `const`
+  constructors.
+
+# Mechanics
+
+- Format at **page width 120** (`make fmt`), never a bare `dart format`.
+- Generated files (`*.g.dart`, `*.config.dart`, `*.module.dart`,
+  `l10n/generated/`) are not committed and are never edited by hand. Change the
+  source annotation and run `make codegen`.
+- Touching `@injectable` / `@JsonSerializable` / `@RestApi` means running
+  `make codegen` for that package before you can claim it compiles.
