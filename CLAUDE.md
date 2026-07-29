@@ -29,6 +29,7 @@ make test PKG=core/core_storage        # one package
 make test PKG=app ARGS="--name boots"  # one test
 make test-coverage # per-package floor + workspace threshold
 make check-deps   # architecture boundaries + the Makefile package lists
+make check-artifacts # fail if build output or generated code is tracked by git
 make ci           # the full gate
 make dev|stg|prod
 make rename NAME="My App" ORG=com.acme.myapp
@@ -96,7 +97,11 @@ Dependencies flow downward only and are **enforced** by
    load-more, `restartable()` for refresh and search. The default is wrong for
    all of them.
 9. **Generated code is not committed** (`*.g.dart`, `*.config.dart`,
-   `*.module.dart`, `l10n/generated/`).
+   `*.module.dart`, `l10n/generated/`). Enforced by `make check-artifacts`,
+   which is in `make ci`. `.gitignore` alone does not enforce it — it applies
+   only to files git is not already tracking, so anything committed before its
+   rule existed stays tracked and no amount of ignoring removes it. That is how
+   ten generated files, 197 build outputs and a whole FVM SDK got in here.
 10. **A screen is a tree of small `const` widgets, each on its own
     `BlocSelector`.** One per region that changes independently, selecting the
     narrowest slice it renders; a **record** when it needs two fields, because
@@ -124,8 +129,9 @@ Run `make codegen` after changing:
 
 ## Before saying a change is done
 
-`make fmt` + `make analyze` + `make test` + `make check-deps` — or just
-`make ci`. A change is not done until that is green.
+`make fmt` + `make analyze` + `make test` + `make check-deps` +
+`make check-artifacts` — or just `make ci`. A change is not done until that is
+green.
 
 **Green is necessary, not sufficient.** This whole gate once passed while the
 app could not open: `core_ui` carried a `@lazySingleton` but had no
