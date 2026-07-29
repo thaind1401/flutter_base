@@ -9,7 +9,11 @@
 import 'dart:io';
 
 /// Minimum line coverage across the workspace, as a percentage.
-const double threshold = 40;
+///
+/// Raised 40 → 70 once core_arch and core_ui were covered; the workspace sits
+/// at 72.8%. A threshold far below the real number ratchets nothing — it lets
+/// coverage decay for years before anyone hears about it.
+const double threshold = 70;
 
 /// Minimum line coverage for any single package.
 ///
@@ -18,7 +22,12 @@ const double threshold = 40;
 /// at all sits at 0% and the build stays green — which is roughly how this
 /// project ended up with four untested packages. A floor per package makes that
 /// impossible to hide.
-const double packageThreshold = 20;
+///
+/// Raised 20 → 50. Not higher yet, and the reason is specific rather than
+/// cautious: `mini_app_sample` is at 53.0%, `feature_auth` at 55.7% and
+/// `core_kit` at 55.9%. 60 is the next step and it needs those three covered,
+/// not a change to this line.
+const double packageThreshold = 50;
 
 /// Packages allowed below [packageThreshold], with the reason.
 ///
