@@ -35,11 +35,11 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i895.AppEnvironmentConfig>(
       () => appModule.environmentConfig,
     );
-    gh.lazySingleton<_i895.AppLogger>(
-      () => appModule.environmentLogger(gh<_i895.AppEnvironmentConfig>()),
-    );
     gh.lazySingleton<_i309.RequestContextProvider>(
       () => _i410.DeviceRequestContext(),
+    );
+    gh.lazySingleton<_i895.AppLogger>(
+      () => appModule.environmentLogger(gh<_i895.AppEnvironmentConfig>()),
     );
     gh.lazySingleton<_i132.SessionCubit>(
       () => _i132.SessionCubit(

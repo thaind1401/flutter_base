@@ -1,31 +1,29 @@
 // @dart=3.6
-// ignore_for_file: type=lint
+// ignore_for_file: directives_ordering
 // build_runner >=2.4.16
-import 'dart:io' as _io;
-import 'package:build_runner/src/build_plan/builder_factories.dart'
-    as _build_runner;
-import 'package:build_runner/src/bootstrap/processes.dart' as _build_runner;
-import 'package:injectable_generator/builder.dart' as _i1;
-import 'package:json_serializable/builder.dart' as _i2;
-import 'package:retrofit_generator/retrofit_generator.dart' as _i3;
-import 'package:source_gen/builder.dart' as _i4;
+// ignore_for_file: no_leading_underscores_for_library_prefixes
+import 'package:build_runner/src/build_plan/builder_factories.dart' as _i1;
+import 'package:injectable_generator/builder.dart' as _i2;
+import 'package:json_serializable/builder.dart' as _i3;
+import 'package:retrofit_generator/retrofit_generator.dart' as _i4;
+import 'package:source_gen/builder.dart' as _i5;
+import 'dart:io' as _i6;
+import 'package:build_runner/src/bootstrap/processes.dart' as _i7;
 
-final _builderFactories = _build_runner.BuilderFactories(
+final _builderFactories = _i1.BuilderFactories(
   {
-    'injectable_generator:injectable_builder': [_i1.injectableBuilder],
+    'injectable_generator:injectable_builder': [_i2.injectableBuilder],
     'injectable_generator:injectable_config_builder': [
-      _i1.injectableConfigBuilder
+      _i2.injectableConfigBuilder
     ],
-    'json_serializable:json_serializable': [_i2.jsonSerializable],
-    'retrofit_generator:retrofit_generator': [_i3.retrofitBuilder],
-    'source_gen:combining_builder': [_i4.combiningBuilder],
+    'json_serializable:json_serializable': [_i3.jsonSerializable],
+    'retrofit_generator:retrofit_generator': [_i4.retrofitBuilder],
+    'source_gen:combining_builder': [_i5.combiningBuilder],
   },
-  postProcessBuilderFactories: {
-    'source_gen:part_cleanup': _i4.partCleanup,
-  },
+  postProcessBuilderFactories: {'source_gen:part_cleanup': _i5.partCleanup},
 );
 void main(List<String> args) async {
-  _io.exitCode = await _build_runner.ChildProcess.run(
+  _i6.exitCode = await _i7.ChildProcess.run(
     args,
     _builderFactories,
   )!;

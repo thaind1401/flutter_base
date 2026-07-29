@@ -5,6 +5,7 @@ import 'package:app/app/mini_apps/app_mini_app_host.dart';
 import 'package:app/app/session/session_cubit.dart';
 import 'package:core_arch/core_arch.dart';
 import 'package:core_kit/core_kit.dart';
+import 'package:feature_auth/feature_auth.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mini_app_contract/mini_app_contract.dart';
 import 'package:mini_app_sample/mini_app_sample.dart';
@@ -39,6 +40,13 @@ final class Bootstrap {
     // slow network must not wait for it to draw the first frame. The banner
     // stays hidden until the check resolves.
     unawaited(getIt<ConnectivityMonitor>().start());
+
+    // Dev-only: seeds a session before the router's first redirect runs, so
+    // `SessionGuard` sees an authenticated user and the login screen is never
+    // shown. Gated by `DEV_AUTH_BYPASS` in `env_config/dev/dart_defines.json`.
+    if (getIt<AppEnvironmentConfig>().devAuthBypass) {
+      await getIt<SessionStore>().save(AuthSession.devBypass());
+    }
 
     // Blocking on purpose: the router's first redirect must already know
     // whether a session exists, or a signed-in user sees the login screen flash.

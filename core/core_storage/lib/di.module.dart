@@ -27,10 +27,10 @@ class CoreStoragePackageModule extends _i526.MicroPackageModule {
     gh.lazySingleton<_i558.FlutterSecureStorage>(
         () => storageModule.secureStorage);
     gh.lazySingleton<_i377.InMemoryStore>(() => storageModule.inMemoryStore);
-    gh.lazySingleton<_i275.SecureStore>(
-        () => _i40.SecureStoreImpl(gh<_i558.FlutterSecureStorage>()));
     gh.lazySingleton<_i275.PreferenceStore>(
         () => _i975.PreferenceStoreImpl(gh<_i460.SharedPreferences>()));
+    gh.lazySingleton<_i275.SecureStore>(
+        () => _i40.SecureStoreImpl(gh<_i558.FlutterSecureStorage>()));
   }
 }
 

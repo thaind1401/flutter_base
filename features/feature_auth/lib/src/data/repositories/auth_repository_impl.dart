@@ -13,13 +13,20 @@ import 'package:injectable/injectable.dart';
 /// `BuildContext`. Copy this shape for every new repository.
 @LazySingleton(as: AuthRepository)
 final class AuthRepositoryImpl extends BaseRepository implements AuthRepository {
-  AuthRepositoryImpl(this._api, super.failureMapper);
+  AuthRepositoryImpl(this._api, this._config, super.failureMapper);
 
   final AuthApi _api;
+  final AppEnvironmentConfig _config;
 
   @override
-  Future<Result<AuthSession>> signIn({required String email, required String password}) =>
-      guard(() async => (await _api.signIn(SignInRequestDto(email: email, password: password))).toEntity());
+  Future<Result<AuthSession>> signIn({required String email, required String password}) {
+    // Dev-only: skips the network call entirely so the login button always
+    // succeeds regardless of what was typed. Gated by `devAuthBypass`, which
+    // is only ever true when `DEV_AUTH_BYPASS` is set in
+    // `env_config/dev/dart_defines.json` — never in stg or prod.
+    if (_config.devAuthBypass) return Future.value(Ok(AuthSession.devBypass()));
+    return guard(() async => (await _api.signIn(SignInRequestDto(email: email, password: password))).toEntity());
+  }
 
   @override
   Future<Result<Unit>> signOut() => guard(() async {

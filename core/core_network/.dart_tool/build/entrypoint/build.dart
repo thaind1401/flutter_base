@@ -1,27 +1,25 @@
 // @dart=3.6
-// ignore_for_file: type=lint
+// ignore_for_file: directives_ordering
 // build_runner >=2.4.16
-import 'dart:io' as _io;
-import 'package:build_runner/src/build_plan/builder_factories.dart'
-    as _build_runner;
-import 'package:build_runner/src/bootstrap/processes.dart' as _build_runner;
-import 'package:injectable_generator/builder.dart' as _i1;
-import 'package:source_gen/builder.dart' as _i2;
+// ignore_for_file: no_leading_underscores_for_library_prefixes
+import 'package:build_runner/src/build_plan/builder_factories.dart' as _i1;
+import 'package:injectable_generator/builder.dart' as _i2;
+import 'package:source_gen/builder.dart' as _i3;
+import 'dart:io' as _i4;
+import 'package:build_runner/src/bootstrap/processes.dart' as _i5;
 
-final _builderFactories = _build_runner.BuilderFactories(
+final _builderFactories = _i1.BuilderFactories(
   {
-    'injectable_generator:injectable_builder': [_i1.injectableBuilder],
+    'injectable_generator:injectable_builder': [_i2.injectableBuilder],
     'injectable_generator:injectable_config_builder': [
-      _i1.injectableConfigBuilder
+      _i2.injectableConfigBuilder
     ],
-    'source_gen:combining_builder': [_i2.combiningBuilder],
+    'source_gen:combining_builder': [_i3.combiningBuilder],
   },
-  postProcessBuilderFactories: {
-    'source_gen:part_cleanup': _i2.partCleanup,
-  },
+  postProcessBuilderFactories: {'source_gen:part_cleanup': _i3.partCleanup},
 );
 void main(List<String> args) async {
-  _io.exitCode = await _build_runner.ChildProcess.run(
+  _i4.exitCode = await _i5.ChildProcess.run(
     args,
     _builderFactories,
   )!;

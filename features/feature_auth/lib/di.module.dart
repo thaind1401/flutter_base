@@ -40,16 +40,17 @@ class FeatureAuthPackageModule extends _i526.MicroPackageModule {
           gh<_i895.AppEnvironmentConfig>(),
           gh<_i895.FailureMapper>(),
         ));
-    gh.factory<_i131.RestoreSessionUseCase>(
-        () => _i131.RestoreSessionUseCase(gh<_i812.SessionStore>()));
-    gh.lazySingleton<_i1063.AuthRepository>(() => _i953.AuthRepositoryImpl(
-          gh<_i244.AuthApi>(),
-          gh<_i895.FailureMapper>(),
-        ));
     gh.lazySingleton<_i309.AuthSessionDelegate>(() => _i478.SessionAuthDelegate(
           gh<_i812.SessionStore>(),
           gh<_i996.TokenRefreshApi>(),
           logger: gh<_i895.AppLogger>(),
+        ));
+    gh.factory<_i131.RestoreSessionUseCase>(
+        () => _i131.RestoreSessionUseCase(gh<_i812.SessionStore>()));
+    gh.lazySingleton<_i1063.AuthRepository>(() => _i953.AuthRepositoryImpl(
+          gh<_i244.AuthApi>(),
+          gh<_i895.AppEnvironmentConfig>(),
+          gh<_i895.FailureMapper>(),
         ));
     gh.factory<_i131.SignInUseCase>(() => _i131.SignInUseCase(
           gh<_i1063.AuthRepository>(),

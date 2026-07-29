@@ -42,6 +42,17 @@ final class AuthSession extends Equatable {
     required this.user,
   });
 
+  /// The fixed session used only when `AppEnvironmentConfig.devAuthBypass` is
+  /// true — seeded at bootstrap to skip the login screen, and returned by
+  /// `AuthRepositoryImpl.signIn` so the login button always succeeds. Never
+  /// constructed otherwise.
+  factory AuthSession.devBypass() => AuthSession(
+    accessToken: 'dev-bypass-token',
+    refreshToken: 'dev-bypass-refresh',
+    expiresAt: DateTime.now().add(const Duration(days: 1)),
+    user: const AuthUser(id: 'dev-bypass', email: 'dev@bypass.local', displayName: 'Dev Bypass'),
+  );
+
   final String accessToken;
   final String refreshToken;
   final DateTime expiresAt;

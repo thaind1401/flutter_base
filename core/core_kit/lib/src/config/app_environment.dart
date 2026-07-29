@@ -43,6 +43,7 @@ final class AppEnvironmentConfig extends Equatable {
     this.sendTimeout = const Duration(seconds: 30),
     this.enableNetworkLogging = false,
     this.enableCertificatePinning = false,
+    this.devAuthBypass = false,
   });
 
   /// Builds from `--dart-define-from-file=env_config/<flavor>/dart_defines.json`.
@@ -57,6 +58,11 @@ final class AppEnvironmentConfig extends Equatable {
       // personal data, and release logs are readable with `adb logcat`.
       enableNetworkLogging: !env.isProduction,
       enableCertificatePinning: env.isProduction,
+      // Skips the login screen and makes it always succeed, for local dev only.
+      // The `!env.isProduction` guard is redundant with the define never being
+      // set in `env_config/prod/dart_defines.json`, but a flag that can fake
+      // authentication is worth a second guard against ever shipping true.
+      devAuthBypass: !env.isProduction && const bool.fromEnvironment('DEV_AUTH_BYPASS'),
     );
   }
 
@@ -67,6 +73,12 @@ final class AppEnvironmentConfig extends Equatable {
   final Duration sendTimeout;
   final bool enableNetworkLogging;
   final bool enableCertificatePinning;
+
+  /// When true, `SignInUseCase` succeeds without calling the backend and
+  /// bootstrap seeds a session before the first frame — the login screen is
+  /// never shown and its button never fails. Only ever set via `DEV_AUTH_BYPASS`
+  /// in `env_config/dev/dart_defines.json`.
+  final bool devAuthBypass;
 
   bool get isProduction => environment.isProduction;
 
@@ -79,5 +91,6 @@ final class AppEnvironmentConfig extends Equatable {
     sendTimeout,
     enableNetworkLogging,
     enableCertificatePinning,
+    devAuthBypass,
   ];
 }
