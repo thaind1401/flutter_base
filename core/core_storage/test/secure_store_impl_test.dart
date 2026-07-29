@@ -112,7 +112,14 @@ void main() {
       // Read through `params`, the map the plugin actually sends over the
       // channel, because the options themselves keep their fields private.
       expect(SecureStoreImpl.defaultStorage.iOptions.params['accessibility'], 'first_unlock');
-      expect(SecureStoreImpl.defaultStorage.aOptions.params['encryptedSharedPreferences'], 'true');
     });
+
+    // There is deliberately no Android assertion here any more. This used to
+    // check `aOptions.params['encryptedSharedPreferences'] == 'true'`, and it
+    // did its job — it failed the moment that option was dropped. But plugin
+    // v10 deprecates the parameter and ignores it outright: Google deprecated
+    // Jetpack Security, and the plugin now always uses its own ciphers. An
+    // assertion on a value the plugin discards tests nothing and would block
+    // the next person from removing dead configuration.
   });
 }
