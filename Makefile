@@ -34,7 +34,7 @@ DEFINES = --dart-define-from-file=env_config/$(FLAVOR)/dart_defines.json
 
 .DEFAULT_GOAL := help
 .PHONY: help setup sdk env get hooks codegen codegen-watch l10n analyze fmt fmt-check test test-coverage \
-        check-deps ci clean rebuild dev stg prod apk aab ipa rename doctor
+        check-deps check-artifacts ci clean rebuild dev stg prod apk aab ipa rename doctor
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -124,7 +124,28 @@ test-coverage: ## Run tests with coverage and print a summary
 check-deps: ## Fail if any package imports across a forbidden layer boundary
 	@$(DART) run tools/check_dependencies.dart
 
-ci: get l10n codegen fmt-check analyze test check-deps ## The full quality gate
+# Regexes rather than `git check-ignore`, because .gitignore is exactly what
+# does not help here: it applies only to files git is not already tracking, so
+# anything added before its rule existed stays tracked forever and no amount of
+# ignoring removes it. 102MB of .dart_tool/, build/, coverage/ and a whole FVM
+# SDK reached this repo that way, along with ten generated files that rule 9
+# says are never committed and three env files the ignore list calls secrets.
+# This target is what makes that removal stick.
+ARTIFACT_PATTERN := ^\.dart_tool/|^\.fvm/|(^|/)build/|(^|/)coverage/|\.g\.dart$$|\.config\.dart$$|\.module\.dart$$|l10n/generated/|env_config/.*/dart_defines\.json$$
+
+check-artifacts: ## Fail if build output, generated code or env files are tracked by git
+	@tracked=$$(git ls-files | grep -E '$(ARTIFACT_PATTERN)' || true); \
+	if [ -n "$$tracked" ]; then \
+		echo "✗ build output or generated code is tracked by git:"; \
+		echo "$$tracked" | sed 's/^/    /'; \
+		echo ""; \
+		echo "  Untrack it (this keeps the files on disk):"; \
+		echo "    git rm -r --cached <path>"; \
+		exit 1; \
+	fi
+	@echo "✓ no build output, generated code or env files tracked"
+
+ci: get l10n codegen fmt-check analyze test check-deps check-artifacts ## The full quality gate
 	@echo "✓ CI checks passed."
 
 clean: ## Remove build outputs, generated code and the build_runner caches

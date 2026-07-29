@@ -1,0 +1,24 @@
+#!/bin/sh
+# Formatting and static analysis, before anything leaves the machine.
+#
+# Deliberately NOT `make test`: a pre-push hook that takes a minute gets
+# bypassed with --no-verify until nobody runs it at all. These two are the
+# checks that catch the mistakes worth catching at push time and finish in
+# seconds. The tests, the coverage floor and the boundary checks are CI's job —
+# see .github/workflows/ci.yml, which runs the same targets.
+#
+# Codegen is not run here either. It writes files, and a hook that mutates the
+# working tree during a push is how you end up pushing something you did not
+# review.
+#
+# Bypass a run with `git push --no-verify`.
+
+set -e
+
+echo "→ pre-push: make fmt-check"
+make fmt-check
+
+echo "→ pre-push: make analyze"
+make analyze
+
+echo "✓ pre-push checks passed"

@@ -1,6 +1,0 @@
-{
-  "APP_ENV": "prod",
-  "BASE_URL": "https://api-prod.example.com",
-  "CONNECT_TIMEOUT_SECONDS": 30,
-  "RECEIVE_TIMEOUT_SECONDS": 30
-}

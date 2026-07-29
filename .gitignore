@@ -10,13 +10,17 @@ coverage/
 .flutter-plugins-dependencies
 
 # Generated code is never committed. A fresh clone runs `make setup`.
+# The directory patterns need `**/`: a pattern containing a slash is anchored to
+# this file's directory, so the earlier `lib/src/l10n/generated/` matched only a
+# root-level `lib/`, never `core/core_ui/lib/src/l10n/generated/`. Three
+# generated localization files sat tracked in the repo because of it.
 *.g.dart
 *.config.dart
 *.module.dart
 *.gr.dart
 *.mocks.dart
-lib/generated/
-lib/src/l10n/generated/
+**/lib/generated/
+**/l10n/generated/
 
 # Per-package lockfiles: this is a pub workspace, only the root lockfile counts.
 */pubspec.lock
