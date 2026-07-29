@@ -15,7 +15,7 @@ dependencies:
   core_kit: ^1.0.0
   dio: ^5.9.0
   connectivity_plus: ^7.0.0
-  injectable: ^2.6.0
+  injectable: ^3.0.0
   # Retrofit's runtime only; the generator is a dev dependency of the packages
   # that actually declare `@RestApi` data sources.
   retrofit: ^4.9.0
@@ -25,4 +25,4 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   build_runner: ^2.4.13
-  injectable_generator: ^2.6.2
+  injectable_generator: ^3.0.2
