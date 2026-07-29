@@ -1,0 +1,55 @@
+Running `(cd /Users/thai.nguyen/.pub-cache/hosted/pub.dev/objective_c-9.5.0/; ANDROID_HOME=/Users/thai.nguyen/Library/Android/sdk TMPDIR=/var/folders/fd/5t5tym8s5rj00fmjbynkcvcc0000gp/T/ PATH=/Users/thai.nguyen/fvm/versions/3.41.9/bin:/Users/thai.nguyen/fvm/default/bin:/Users/thai.nguyen/Library/Android/sdk/platform-tools:/Users/thai.nguyen/Library/Android/sdk/cmdline-tools/latest/bin:/Library/Frameworks/Python.framework/Versions/3.11/bin:/usr/local/bin:/usr/local/sbin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Library/Apple/usr/bin:/Users/thai.nguyen/Library/Application Support/Code/User/globalStorage/github.copilot-chat/debugCommand:/Users/thai.nguyen/Library/Application Support/Code/User/globalStorage/github.copilot-chat/copilotCli:/Users/thai.nguyen/fvm/versions/3.41.9/bin/:/Users/thai.nguyen/fvm/default/bin:/Users/thai.nguyen/Library/Android/sdk/platform-tools:/Users/thai.nguyen/Library/Android/sdk/cmdline-tools/latest/bin:/Library/Frameworks/Python.framework/Versions/3.11/bin:/Users/thai.nguyen/.pub-cache/bin:/Users/thai.nguyen/.pub-cache/bin HOME=/Users/thai.nguyen /Users/thai.nguyen/fvm/versions/3.41.9/bin/cache/dart-sdk/bin/dart --packages=/Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/package_config.json /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/objective_c/5f31b8d621/hook.dill --config=/Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/objective_c/5f31b8d621/input.json )`.
+INFO: 2026-07-29 09:34:26.394592: Using compiler /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang from BuildInput.cCompiler.cc.
+
+INFO: 2026-07-29 09:34:26.404785: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target x86_64-apple-darwin -mmacos-version-min=13 -c /Users/thai.nguyen/.pub-cache/hosted/pub.dev/objective_c-9.5.0/src/include/dart_api_dl.c -fpic -gline-tables-only -I src -o /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/obj/src/include/dart_api_dl.c.o
+
+INFO: 2026-07-29 09:34:26.408166: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target x86_64-apple-darwin -mmacos-version-min=13 -c /Users/thai.nguyen/.pub-cache/hosted/pub.dev/objective_c-9.5.0/src/objective_c.c -fpic -gline-tables-only -I src -o /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/obj/src/objective_c.c.o
+
+INFO: 2026-07-29 09:34:26.408562: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target x86_64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/thai.nguyen/.pub-cache/hosted/pub.dev/objective_c-9.5.0/src/input_stream_adapter.m -fpic -gline-tables-only -I src -o /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/obj/src/input_stream_adapter.m.o
+
+INFO: 2026-07-29 09:34:26.408861: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target x86_64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/thai.nguyen/.pub-cache/hosted/pub.dev/objective_c-9.5.0/src/objective_c.m -fpic -gline-tables-only -I src -o /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/obj/src/objective_c.m.o
+
+INFO: 2026-07-29 09:34:26.409138: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target x86_64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/thai.nguyen/.pub-cache/hosted/pub.dev/objective_c-9.5.0/src/observer.m -fpic -gline-tables-only -I src -o /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/obj/src/observer.m.o
+
+INFO: 2026-07-29 09:34:26.409372: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target x86_64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/thai.nguyen/.pub-cache/hosted/pub.dev/objective_c-9.5.0/src/ns_number.m -fpic -gline-tables-only -I src -o /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/obj/src/ns_number.m.o
+
+INFO: 2026-07-29 09:34:26.409623: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target x86_64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/thai.nguyen/.pub-cache/hosted/pub.dev/objective_c-9.5.0/src/protocol.m -fpic -gline-tables-only -I src -o /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/obj/src/protocol.m.o
+
+INFO: 2026-07-29 09:34:26.409871: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target x86_64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/thai.nguyen/.pub-cache/hosted/pub.dev/objective_c-9.5.0/src/objective_c_bindings_generated.m -fpic -gline-tables-only -I src -o /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/obj/src/objective_c_bindings_generated.m.o
+
+INFO: 2026-07-29 09:34:27.003487: Generated /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/obj/src/objective_c.c.o
+
+INFO: 2026-07-29 09:34:27.005338: 
+INFO: 2026-07-29 09:34:27.005378: 
+INFO: 2026-07-29 09:34:27.005402: Generated /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/obj/src/include/dart_api_dl.c.o
+
+INFO: 2026-07-29 09:34:27.005600: 
+INFO: 2026-07-29 09:34:27.005633: 
+INFO: 2026-07-29 09:34:27.005671: Generated /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/obj/src/observer.m.o
+
+INFO: 2026-07-29 09:34:27.005881: 
+INFO: 2026-07-29 09:34:27.005993: 
+INFO: 2026-07-29 09:34:27.006029: Generated /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/obj/src/protocol.m.o
+
+INFO: 2026-07-29 09:34:27.678731: 
+INFO: 2026-07-29 09:34:27.678790: 
+INFO: 2026-07-29 09:34:27.678814: Generated /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/obj/src/ns_number.m.o
+
+INFO: 2026-07-29 09:34:27.711104: 
+INFO: 2026-07-29 09:34:27.711159: 
+INFO: 2026-07-29 09:34:27.711179: Generated /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/obj/src/input_stream_adapter.m.o
+
+INFO: 2026-07-29 09:34:27.711653: 
+INFO: 2026-07-29 09:34:27.711688: 
+INFO: 2026-07-29 09:34:27.711711: Generated /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/obj/src/objective_c.m.o
+
+INFO: 2026-07-29 09:34:27.791159: 
+INFO: 2026-07-29 09:34:27.791208: 
+INFO: 2026-07-29 09:34:27.791228: Generated /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/obj/src/objective_c_bindings_generated.m.o
+
+INFO: 2026-07-29 09:34:27.791733: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -shared -Wl,-encryptable -undefined dynamic_lookup -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target x86_64-apple-darwin -mmacos-version-min=13 /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/obj/src/include/dart_api_dl.c.o /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/obj/src/objective_c.c.o /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/obj/src/input_stream_adapter.m.o /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/obj/src/objective_c.m.o /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/obj/src/observer.m.o /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/obj/src/ns_number.m.o /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/obj/src/protocol.m.o /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/obj/src/objective_c_bindings_generated.m.o -o /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/objective_c.dylib
+
+INFO: 2026-07-29 09:34:28.082597: 
+INFO: 2026-07-29 09:34:28.082729: 
+INFO: 2026-07-29 09:34:28.082751: Generated /Users/thai.nguyen/GTS/Projects/flutter_base/.dart_tool/hooks_runner/shared/objective_c/build/5f31b8d621/objective_c.dylib
+
