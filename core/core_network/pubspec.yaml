@@ -1,0 +1,28 @@
+name: core_network
+description: HTTP transport — Dio client, interceptors, and the single place exceptions become Failures.
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: '>=3.8.0 <4.0.0'
+  flutter: '>=3.29.0'
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  core_kit: ^1.0.0
+  dio: ^5.9.0
+  connectivity_plus: ^7.0.0
+  injectable: ^2.6.0
+  # Retrofit's runtime only; the generator is a dev dependency of the packages
+  # that actually declare `@RestApi` data sources.
+  retrofit: ^4.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.13
+  injectable_generator: ^2.6.2

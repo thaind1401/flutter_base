@@ -1,0 +1,44 @@
+name: flutter_base_workspace
+description: Modular Flutter application base — clean architecture, feature packages, one dependency resolution.
+publish_to: none
+
+environment:
+  sdk: '>=3.8.0 <4.0.0'
+
+# Dart pub workspace: one resolution, one `pubspec.lock` at the root, zero
+# version drift between packages. Every member declares `resolution: workspace`.
+#
+# Dependency direction is enforced top-to-bottom; `make check-deps` fails the
+# build if a package reaches sideways or upward.
+#
+# Packages are grouped by kind — `core/`, `features/`, `mini_apps/` — and each
+# directory keeps its full package name, so `package:core_ui/...` maps to
+# `core/core_ui/` with no translation step. The mild stutter in `core/core_kit`
+# buys that: a grep for the package name finds the directory.
+#
+#   core_kit  (pure Dart: Result, Failure, extensions — no Flutter)
+#      ├── core_storage      (key-value persistence behind interfaces)
+#      ├── core_network      (Dio + failure mapping; auth is inverted)
+#      ├── core_arch         (use case / repository / bloc / routing bases)
+#      └── core_ui           (design tokens, theme, widgets, overlays)
+#              ├── mini_app_contract   (host <-> mini-app boundary only)
+#              ├── feature_*           (vertical slices: domain+data+ui)
+#              └── mini_app_*          (self-contained, contract-only coupling)
+#                      └── app         (composition root: DI, router, shell)
+workspace:
+  - app
+  - core/core_kit
+  - core/core_storage
+  - core/core_network
+  - core/core_arch
+  - core/core_ui
+  - mini_apps/mini_app_contract
+  - features/feature_auth
+  - mini_apps/mini_app_sample
+
+# Workspaces allow `dependency_overrides` in the root pubspec only.
+# dependency_overrides:
+
+dev_dependencies:
+  # Version-pinned tooling shared by every package.
+  flutter_lints: ^6.0.0

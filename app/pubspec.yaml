@@ -1,0 +1,43 @@
+name: app
+description: Host application — the composition root. Wires packages together and owns almost no logic itself.
+publish_to: none
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.8.0 <4.0.0'
+  flutter: '>=3.29.0'
+
+resolution: workspace
+
+# The host depends on every package; no package depends on the host. That is
+# what makes each package reusable and what keeps this file the only place a
+# new feature has to be mentioned.
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  core_kit: ^1.0.0
+  core_arch: ^1.0.0
+  core_ui: ^1.0.0
+  core_network: ^1.0.0
+  core_storage: ^1.0.0
+  mini_app_contract: ^1.0.0
+  feature_auth: ^1.0.0
+  mini_app_sample: ^1.0.0
+  get_it: ^8.0.3
+  injectable: ^2.6.0
+  device_info_plus: ^11.2.0
+  package_info_plus: ^8.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  # Used by injection_test.dart to seed the preference store's mock values.
+  shared_preferences: ^2.3.3
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.13
+  injectable_generator: ^2.6.2
+
+flutter:
+  uses-material-design: true

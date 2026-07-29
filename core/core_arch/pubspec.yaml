@@ -1,0 +1,33 @@
+name: core_arch
+description: Architectural base types — use cases, repositories, bloc bases, view state, routing contracts.
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: '>=3.8.0 <4.0.0'
+  flutter: '>=3.29.0'
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  core_kit: ^1.0.0
+  bloc: ^9.0.0
+  flutter_bloc: ^9.1.1
+  bloc_concurrency: ^0.3.0
+  equatable: ^2.0.5
+  go_router: ^14.8.1
+  injectable: ^2.6.0
+  get_it: ^8.0.3
+  meta: ^1.12.0
+
+# No build_runner or injectable_generator: this package declares base types and
+# annotates nothing, so a codegen run here emitted no files and only cost time
+# on every `make codegen` and every CI run. `make check-deps` now fails if that
+# changes without CODEGEN_PACKAGES being updated too.
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  bloc_test: ^10.0.0
+  flutter_lints: ^6.0.0

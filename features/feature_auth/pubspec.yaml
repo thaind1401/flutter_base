@@ -1,0 +1,37 @@
+name: feature_auth
+description: Authentication vertical slice — the reference implementation every other feature copies.
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: '>=3.8.0 <4.0.0'
+  flutter: '>=3.29.0'
+
+resolution: workspace
+
+# A feature package depends on the core layers and on nothing else — no other
+# feature, and never on the host app. Two features that need to talk do so
+# through a contract in a core package, so neither can import the other.
+dependencies:
+  flutter:
+    sdk: flutter
+  core_kit: ^1.0.0
+  core_arch: ^1.0.0
+  core_ui: ^1.0.0
+  core_network: ^1.0.0
+  core_storage: ^1.0.0
+  equatable: ^2.0.5
+  meta: ^1.12.0
+  injectable: ^2.6.0
+  json_annotation: ^4.9.0
+  retrofit: ^4.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  bloc_test: ^10.0.0
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.13
+  injectable_generator: ^2.6.2
+  json_serializable: ^6.9.0
+  retrofit_generator: ^10.0.0

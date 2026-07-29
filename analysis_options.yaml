@@ -1,0 +1,78 @@
+# Single source of truth for lints across the whole workspace.
+# Every package includes this file; do not fork rules per package. If one file
+# genuinely needs an exception, use a scoped `// ignore:` comment there instead.
+include: package:flutter_lints/flutter.yaml
+
+formatter:
+  page_width: 120
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.config.dart"
+    - "**/generated/**"
+  errors:
+    # Generated code (injectable/json_serializable) trips this legitimately.
+    invalid_annotation_target: ignore
+    # Warnings that must never reach main.
+    unused_import: error
+    unused_local_variable: error
+    dead_code: error
+    body_might_complete_normally_nullable: error
+    # Architectural guard rails.
+    always_declare_return_types: error
+    depend_on_referenced_packages: error
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+
+linter:
+  rules:
+    # --- Correctness -------------------------------------------------------
+    always_declare_return_types: true
+    avoid_dynamic_calls: true
+    avoid_slow_async_io: true
+    avoid_type_to_string: true
+    cancel_subscriptions: true
+    close_sinks: true
+    comment_references: false
+    literal_only_boolean_expressions: true
+    no_adjacent_strings_in_list: true
+    prefer_void_to_null: true
+    test_types_in_equals: true
+    throw_in_finally: true
+    unawaited_futures: true
+    unnecessary_statements: true
+    use_build_context_synchronously: true
+
+    # --- Design ------------------------------------------------------------
+    avoid_equals_and_hash_code_on_mutable_classes: true
+    avoid_returning_this: true
+    avoid_setters_without_getters: true
+    avoid_unused_constructor_parameters: true
+    avoid_void_async: true
+    one_member_abstracts: false
+    prefer_const_constructors: true
+    prefer_const_constructors_in_immutables: true
+    prefer_const_declarations: true
+    prefer_const_literals_to_create_immutables: true
+    prefer_final_fields: true
+    prefer_final_in_for_each: true
+    prefer_final_locals: true
+    prefer_relative_imports: false
+    unnecessary_lambdas: true
+    unnecessary_parenthesis: true
+    use_enums: true
+    use_named_constants: true
+    use_super_parameters: true
+
+    # --- Style -------------------------------------------------------------
+    avoid_print: true
+    directives_ordering: true
+    omit_local_variable_types: false
+    prefer_single_quotes: true
+    require_trailing_commas: false
+    sort_constructors_first: true
+    sort_pub_dependencies: false
+    unnecessary_library_name: false

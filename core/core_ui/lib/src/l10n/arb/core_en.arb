@@ -1,0 +1,74 @@
+{
+  "@@locale": "en",
+
+  "commonOk": "OK",
+  "commonCancel": "Cancel",
+  "commonRetry": "Try again",
+  "commonSave": "Save",
+  "commonDelete": "Delete",
+  "commonClose": "Close",
+  "commonConfirm": "Confirm",
+  "commonSearch": "Search",
+  "commonLoading": "Loading…",
+  "commonSeeAll": "See all",
+  "commonSettings": "Settings",
+
+  "emptyTitle": "Nothing here yet",
+  "emptyDescription": "When there is something to show, it will appear here.",
+  "emptySearchTitle": "No results",
+  "emptySearchDescription": "Try a different search term.",
+
+  "errorGenericTitle": "Something went wrong",
+  "errorGenericMessage": "Please try again in a moment.",
+  "errorNetworkTitle": "No connection",
+  "errorNetworkMessage": "Check your internet connection and try again.",
+  "errorTimeoutTitle": "This is taking too long",
+  "errorTimeoutMessage": "The server did not respond in time. Please try again.",
+  "errorServerTitle": "Server error",
+  "errorServerMessage": "We are having trouble on our side. Please try again shortly.",
+  "errorUnauthorizedTitle": "Session expired",
+  "errorUnauthorizedMessage": "Please sign in again to continue.",
+  "errorForbiddenTitle": "Access denied",
+  "errorForbiddenMessage": "You do not have permission to do this.",
+  "errorNotFoundTitle": "Not found",
+  "errorNotFoundMessage": "We could not find what you were looking for.",
+  "errorValidationTitle": "Please check your details",
+  "errorValidationMessage": "Some of the information you entered is not valid.",
+  "errorCacheTitle": "Storage problem",
+  "errorCacheMessage": "We could not read saved data on this device.",
+  "errorPermissionTitle": "Permission needed",
+  "errorPermissionMessage": "Grant the required permission to continue.",
+  "errorPermissionOpenSettings": "Open settings",
+
+  "errorTraceId": "Reference: {traceId}",
+  "@errorTraceId": {
+    "description": "Shown under an error so support can correlate a bug report with a server log.",
+    "placeholders": { "traceId": { "type": "String" } }
+  },
+
+  "formFieldRequired": "This field is required",
+  "formFieldTooShort": "Must be at least {min} characters",
+  "@formFieldTooShort": {
+    "placeholders": { "min": { "type": "int" } }
+  },
+  "formFieldTooLong": "Must be at most {max} characters",
+  "@formFieldTooLong": {
+    "placeholders": { "max": { "type": "int" } }
+  },
+  "formEmailInvalid": "Enter a valid email address",
+  "formPasswordTooShort": "Password must be at least {min} characters",
+  "@formPasswordTooShort": {
+    "placeholders": { "min": { "type": "int" } }
+  },
+  "formPasswordMissingUppercase": "Add at least one uppercase letter",
+  "formPasswordMissingDigit": "Add at least one number",
+  "formPasswordMissingSymbol": "Add at least one symbol",
+  "formPasswordMismatch": "Passwords do not match",
+  "formPhoneInvalid": "Enter a valid phone number",
+
+  "connectivityOffline": "No internet connection",
+  "connectivityRestored": "Back online",
+
+  "loadMoreFailed": "Could not load more",
+  "pullToRefresh": "Pull to refresh"
+}

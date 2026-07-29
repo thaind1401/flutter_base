@@ -1,0 +1,22 @@
+name: core_kit
+description: Pure-Dart foundation — Result, Failure, logging, extensions, form inputs. No Flutter dependency.
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: '>=3.8.0 <4.0.0'
+
+resolution: workspace
+
+# Deliberately Flutter-free: core_kit is the only layer that unit tests can
+# exercise with `dart test` and that non-Flutter tooling (scripts, servers,
+# codegen) can reuse. Never add `flutter` here.
+dependencies:
+  equatable: ^2.0.5
+  meta: ^1.12.0
+  formz: ^0.8.0
+  intl: ^0.20.2
+
+dev_dependencies:
+  test: ^1.25.0
+  flutter_lints: ^6.0.0
