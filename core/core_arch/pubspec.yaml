@@ -19,7 +19,7 @@ dependencies:
   equatable: ^2.0.5
   go_router: ^17.3.0
   injectable: ^3.0.0
-  get_it: ^8.0.3
+  get_it: ^9.2.1
   meta: ^1.12.0
 
 # No build_runner or injectable_generator: this package declares base types and
