@@ -34,7 +34,7 @@ DEFINES = --dart-define-from-file=env_config/$(FLAVOR)/dart_defines.json
 
 .DEFAULT_GOAL := help
 .PHONY: help setup sdk env get hooks codegen codegen-watch l10n analyze fmt fmt-check test test-coverage \
-        check-deps check-artifacts ci clean rebuild dev stg prod apk aab ipa rename doctor
+        check-deps check-artifacts check-props ci clean rebuild dev stg prod apk aab ipa rename doctor
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -133,6 +133,13 @@ check-deps: ## Fail if any package imports across a forbidden layer boundary
 # This target is what makes that removal stick.
 ARTIFACT_PATTERN := ^\.dart_tool/|^\.fvm/|(^|/)build/|(^|/)coverage/|\.g\.dart$$|\.config\.dart$$|\.module\.dart$$|l10n/generated/|env_config/.*/dart_defines\.json$$
 
+check-props: ## Fail if an Equatable class omits a field from props
+	@# Rule 13's teeth. A field outside `props` is invisible to `==`, so
+	@# BlocSelector and buildWhen never rebuild for it — the state is right, the
+	@# widget is right, and the screen simply does not update. Deliberate
+	@# exclusions live in `allowedOmissions` with their reason.
+	@$(DART) run tools/check_equatable_props.dart
+
 check-artifacts: ## Fail if build output, generated code or env files are tracked by git
 	@tracked=$$(git ls-files | grep -E '$(ARTIFACT_PATTERN)' || true); \
 	if [ -n "$$tracked" ]; then \
@@ -145,7 +152,7 @@ check-artifacts: ## Fail if build output, generated code or env files are tracke
 	fi
 	@echo "✓ no build output, generated code or env files tracked"
 
-ci: get l10n codegen fmt-check analyze test check-deps check-artifacts ## The full quality gate
+ci: get l10n codegen fmt-check analyze test check-deps check-props check-artifacts ## The full quality gate
 	@echo "✓ CI checks passed."
 
 clean: ## Remove build outputs, generated code and the build_runner caches

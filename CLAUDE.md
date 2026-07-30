@@ -29,6 +29,7 @@ make test PKG=core/core_storage        # one package
 make test PKG=app ARGS="--name boots"  # one test
 make test-coverage # per-package floor + workspace threshold
 make check-deps   # architecture boundaries + the Makefile package lists
+make check-props  # fail if an Equatable class omits a field from props
 make check-artifacts # fail if build output or generated code is tracked by git
 make ci           # the full gate
 make dev|stg|prod
@@ -130,7 +131,11 @@ Dependencies flow downward only and are **enforced** by
     a profile change at a steady status never appeared.
 13. **Every state class extends `Equatable` and lists every field in `props`.**
     `BlocSelector` and `buildWhen` both decide by `==`. A missing field means
-    that field never rebuilds anything. `core_arch` re-exports `Equatable`.
+    that field never rebuilds anything — the state is right, the widget is
+    right, and the screen does not update. `core_arch` re-exports `Equatable`.
+    Enforced by `make check-props`, which is in `make ci`; a field that is
+    deliberately outside `props` goes in `allowedOmissions` with its reason,
+    like `Failure.stackTrace`.
 
 ## Code generation
 
@@ -143,7 +148,7 @@ Run `make codegen` after changing:
 ## Before saying a change is done
 
 `make fmt` + `make analyze` + `make test` + `make check-deps` +
-`make check-artifacts` — or just `make ci`. A change is not done until that is
+`make check-props` + `make check-artifacts` — or just `make ci`. A change is not done until that is
 green.
 
 **Green is necessary, not sufficient.** This whole gate once passed while the

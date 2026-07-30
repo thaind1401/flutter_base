@@ -13,3 +13,5 @@ way to tell a considered choice from an accident, and re-litigates it.
 | [0005](0005-modular-routing.md) | Route modules and guard objects | Accepted |
 | [0006](0006-dart-define-environments.md) | Environments via dart-define, not platform flavors | Accepted |
 | [0007](0007-mini-app-contract.md) | Mini-apps talk to the host through a contract only | Accepted |
+| [0008](0008-rebuild-scope.md) | A screen is a tree of small widgets, each selecting one slice of state | Accepted |
+| [0009](0009-screen-bases.md) | Every screen extends one of three bases | Accepted |

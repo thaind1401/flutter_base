@@ -11,7 +11,7 @@ void main() {
   const splash = '/';
 
   final guard = SessionGuard(
-    SessionCubit(NullSessionStore(), nullSignOutUseCase()),
+    SessionCubit(nullWatchSessionUseCase(), nullStartSessionUseCase(), nullSignOutUseCase()),
     loginLocation: login,
     homeLocation: home,
     splashLocation: splash,

@@ -10,7 +10,7 @@ import 'fakes/null_session.dart';
 /// A store whose session can change without its status changing — the case that
 /// broke `HomeScreen`.
 final class _MutableSessionStore implements SessionStore {
-  final StreamController<SessionStatus> _changes = StreamController<SessionStatus>.broadcast();
+  final StreamController<SessionSnapshot> _changes = StreamController<SessionSnapshot>.broadcast();
 
   AuthSession? _session;
 
@@ -21,13 +21,21 @@ final class _MutableSessionStore implements SessionStore {
   SessionStatus get status => _session == null ? SessionStatus.unauthenticated : SessionStatus.authenticated;
 
   @override
-  Stream<SessionStatus> get changes => _changes.stream;
+  SessionSnapshot get snapshot => SessionSnapshot(status: status, session: _session);
+
+  @override
+  Stream<SessionSnapshot> get changes => _changes.stream;
 
   /// Publishes without asserting the status differs, exactly as a profile
   /// update would: the user is new, the status is still `authenticated`.
+  ///
+  /// This fake was more permissive than the real store, and that is why the bug
+  /// it was written for survived: `SessionStoreImpl` deduplicated on the status
+  /// alone and published nothing here. `session_store_test.dart` now asserts the
+  /// real store's behaviour directly.
   void put(AuthSession session) {
     _session = session;
-    _changes.add(status);
+    _changes.add(SessionSnapshot(status: status, session: session));
   }
 
   @override
@@ -45,7 +53,7 @@ final class _MutableSessionStore implements SessionStore {
   @override
   Future<Result<Unit>> clear() async {
     _session = null;
-    _changes.add(status);
+    _changes.add(snapshot);
     return const Ok(unit);
   }
 
@@ -86,12 +94,29 @@ void main() {
   });
 
   group('SessionCubit', () {
-    test('starts from whatever the store already holds', () {
+    test('picks up a session the store already holds, without being told', () async {
+      // Construction is no longer synchronous about this, and that is a real
+      // change: the cubit used to read `store.status` and `store.current` in its
+      // initialiser, which is precisely the storage dependency rule 3 forbids.
+      // It now learns from `WatchSessionUseCase`, which seeds the subscription
+      // with the current snapshot — so the answer arrives one microtask later
+      // rather than immediately.
+      //
+      // Nothing in production depends on the synchronous form: `Bootstrap.run`
+      // awaits `restore()` before the first frame. What does matter is that a
+      // cubit constructed *after* a session already exists still converges —
+      // `changes` is a broadcast stream with no replay, so without the seeding
+      // it would sit on `unknown` until the next transition, which for a
+      // signed-in user idling on one screen may never come.
       final store = _MutableSessionStore()..put(_sessionFor('Ada'));
       addTearDown(store.dispose);
 
-      final cubit = SessionCubit(store, nullSignOutUseCase());
+      final cubit = SessionCubit(WatchSessionUseCase(store), StartSessionUseCase(store), nullSignOutUseCase());
       addTearDown(cubit.close);
+
+      expect(cubit.state.status, SessionStatus.unknown, reason: 'nothing has been delivered yet');
+
+      await Future<void>.delayed(Duration.zero);
 
       expect(cubit.state.status, SessionStatus.authenticated);
       expect(cubit.state.user?.displayName, 'Ada');
@@ -105,7 +130,7 @@ void main() {
       final store = _MutableSessionStore()..put(_sessionFor('Ada'));
       addTearDown(store.dispose);
 
-      final cubit = SessionCubit(store, nullSignOutUseCase());
+      final cubit = SessionCubit(WatchSessionUseCase(store), StartSessionUseCase(store), nullSignOutUseCase());
       addTearDown(cubit.close);
 
       final states = <SessionState>[];
@@ -133,7 +158,7 @@ void main() {
       final store = _MutableSessionStore()..put(_sessionFor('Ada'));
       addTearDown(store.dispose);
 
-      final cubit = SessionCubit(store, nullSignOutUseCase());
+      final cubit = SessionCubit(WatchSessionUseCase(store), StartSessionUseCase(store), nullSignOutUseCase());
       addTearDown(cubit.close);
 
       final states = <SessionState>[];
@@ -153,7 +178,7 @@ void main() {
       final store = _MutableSessionStore()..put(_sessionFor('Ada'));
       addTearDown(store.dispose);
 
-      final cubit = SessionCubit(store, nullSignOutUseCase());
+      final cubit = SessionCubit(WatchSessionUseCase(store), StartSessionUseCase(store), nullSignOutUseCase());
       addTearDown(cubit.close);
 
       await store.clear();

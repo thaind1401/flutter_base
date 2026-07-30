@@ -50,23 +50,29 @@ final List<RegExp> excludedPaths = [
 ];
 
 void main() {
-  final reports = Directory.current
-      .listSync(recursive: true)
-      .whereType<File>()
-      .where((file) => file.path.endsWith('coverage/lcov.info'))
-      .toList();
-
-  if (reports.isEmpty) {
-    stderr.writeln('✖ No lcov.info found. Run `make test-coverage` first.');
-    exit(1);
-  }
+  // The package list comes from the Makefile, not from a directory walk.
+  //
+  // Walking the tree looked equivalent and was not: a `coverage/` directory left
+  // behind by a deleted package still holds an lcov.info, so the report kept
+  // counting `mini_app_sample` at 53.0% after the package was removed — dragging
+  // the workspace total down by 2.3 points with numbers for code that no longer
+  // existed. The walk also silently passed when a package produced no report at
+  // all, which is the failure most worth catching: it means the tests did not
+  // run with coverage.
+  final packages = _testPackagesFromMakefile();
 
   var totalFound = 0;
   var totalHit = 0;
   final perPackage = <String, ({int found, int hit})>{};
+  final missing = <String>[];
 
-  for (final report in reports) {
-    final package = _packageOf(report.path);
+  for (final path in packages) {
+    final report = File('$path/coverage/lcov.info');
+    if (!report.existsSync()) {
+      missing.add(path);
+      continue;
+    }
+    final package = path.split('/').last;
     var skipping = false;
     var found = 0;
     var hit = 0;
@@ -99,6 +105,12 @@ void main() {
   stdout.writeln('  ${'TOTAL'.padRight(24)} ${_percent(totalHit, totalFound)}  ($totalHit/$totalFound)\n');
 
   final failures = <String>[];
+
+  // A package listed in TEST_PACKAGES with no report is louder than a wrong
+  // number: it means `make test-coverage` did not run there.
+  for (final path in missing) {
+    failures.add('$path produced no coverage/lcov.info — run `make test-coverage`');
+  }
 
   for (final name in names) {
     final stats = perPackage[name]!;
@@ -138,10 +150,44 @@ void main() {
   );
 }
 
-String _packageOf(String path) {
-  final segments = path.split('/');
-  final index = segments.lastIndexOf('coverage');
-  return index > 0 ? segments[index - 1] : path;
+/// Reads `TEST_PACKAGES` out of the Makefile.
+///
+/// The Makefile is the only place package lists live — see its header, and
+/// `check_dependencies.dart`, which cross-checks the same lists against the
+/// source tree. Duplicating the list here is how the duplicate goes stale, so
+/// this parses the one that already exists rather than declaring a second.
+List<String> _testPackagesFromMakefile() {
+  final makefile = File('Makefile');
+  if (!makefile.existsSync()) {
+    stderr.writeln('✖ Makefile not found. Run this from the repository root, or via `make test-coverage`.');
+    exit(1);
+  }
+
+  final buffer = StringBuffer();
+  var collecting = false;
+  for (final line in makefile.readAsLinesSync()) {
+    if (!collecting && !line.startsWith('TEST_PACKAGES')) continue;
+    collecting = true;
+    // `\` continues the assignment onto the next line, which is how the real
+    // list is written — reading only the first line would silently drop half
+    // the packages and inflate the total.
+    final continued = line.trimRight().endsWith(r'\');
+    buffer.write(' ${continued ? line.trimRight().substring(0, line.trimRight().length - 1) : line}');
+    if (!continued) break;
+  }
+
+  final assignment = buffer.toString();
+  final packages = assignment
+      .substring(assignment.indexOf(':=') + 2)
+      .split(RegExp(r'\s+'))
+      .where((token) => token.isNotEmpty)
+      .toList();
+
+  if (packages.isEmpty) {
+    stderr.writeln('✖ Could not parse TEST_PACKAGES from the Makefile.');
+    exit(1);
+  }
+  return packages;
 }
 
 String _percent(int hit, int found) => found == 0 ? '   n/a' : '${(hit / found * 100).toStringAsFixed(1).padLeft(5)}%';

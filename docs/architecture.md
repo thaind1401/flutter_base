@@ -115,6 +115,49 @@ transition methods instead.
 
 ---
 
+## Screens
+
+Every screen extends one of three bases from `core_ui` and none writes its own
+scaffold:
+
+| Screen | Base | It implements |
+|---|---|---|
+| One block of data, or a form | `BaseScreen` | `buildBody` |
+| A paginated list | `BaseListScreen<B, T>` | `buildItem`, `onLoadMore`, `onRefresh` |
+| A paginated grid | `BaseGridScreen<B, T>` | the same, plus `maxCrossAxisExtent` |
+
+The base owns the chrome every screen needs and every screen forgets: keyboard
+dismissal on a tap outside a field, `resizeToAvoidBottomInset`, safe-area
+handling including a bottom bar that clears the home indicator, and the
+back-button policy. `build` is `@nonVirtual`, so a screen cannot reintroduce a
+hand-written scaffold and quietly lose them.
+
+**Pagination decides the base, not the widget.** `HomeScreen` renders a
+`ListView` and is a `BaseScreen`, because its data arrives complete from the
+mini-app registry — there is no page to load and nothing to refresh.
+
+**Rebuild scope stays with the screen.** `buildBody` is called from `build` and
+its result goes straight to the scaffold; the base wraps it in no builder and
+subscribes to nothing, so ADR-0008 applies inside `buildBody` unchanged. The two
+paged bases *do* subscribe, which is ADR-0008's documented exception: for a
+paginated collection the whole state is the one thing on screen.
+
+A plain screen has no paging surface at all — `onLoadMore`, `onRefresh`,
+`onRetry`, `buildItem` and `enablePullToRefresh` live on a private intermediate
+class that only the paged bases extend, so none of them compiles on a
+`BaseScreen` subclass. That separation is the reason this is three classes rather
+than one with optional hooks: `core_arch`'s `BaseBloc` carries a comment about
+the alternative, where a lifecycle observer in the bloc base meant every bloc in
+the app received every callback whether it cared or not.
+
+Both paged bases are thin wrappers over `PagedScrollView`, which owns the parts
+of pagination that are easy to get subtly wrong — the load-more threshold, the
+guards against firing while a request is in flight or past the last page, the
+retry footer, keeping items on screen through a refresh. There is one copy of
+that logic and a shared contract test runs it for both layouts.
+
+---
+
 ## Side effects
 
 One-shot outcomes — navigate, toast, close sheet — go out on a stream:
@@ -232,6 +275,15 @@ is a folder with extra steps rather than a package that can ship elsewhere.
 Installing one is a line in `app/lib/app/bootstrap.dart` plus a pubspec entry.
 Removing one is deleting that line.
 
+**This base ships no mini-app.** The contract, the registry and the host adapter
+stay, and `Bootstrap.run()` passes an empty list, so a package written against
+`mini_app_contract` drops in without any of that being rebuilt first. The
+reference mini-app was deleted because the condition that justifies the concept —
+a module written by someone who cannot see the host's source — does not hold for
+one team shipping from one repository. **Read ADR-0007 before adding one**: a
+`feature_*` package with a `RouteModule` is the right answer unless that
+condition is met.
+
 ---
 
 ## Connectivity and retry
@@ -294,8 +346,23 @@ full-screen error over a working app during a two-second tunnel.
 | Use cases | hand-written fake repository | `login_bloc_test.dart` |
 | Blocs | `bloc_test` + fakes | `login_bloc_test.dart` |
 | Router policy | pure function | `session_guard_test.dart` |
+| Router assembly | real `GoRouter`, pumped | `app_router_builder_test.dart` |
+| Widgets | `testWidgets` + real theme and l10n | `app_button_test.dart` |
+| Screen bases | fake screens over a stub bloc | `base_screen_test.dart` |
 | DI graph | resolve everything | `injection_test.dart` |
+| Startup | real `Bootstrap.run()` + real `App` | `app_smoke_test.dart` |
 
 Hand-written fakes are preferred over generated mocks: for interfaces this
 small they are shorter than the mock setup, they read as documentation of what
 the collaborator does, and they do not require codegen to run before the tests.
+
+**Shared behaviour is tested once, against every implementation.** Where two
+types make the same promises, the promises live in one file and each type is run
+through it, so a second implementation cannot quietly behave differently:
+
+- `key_value_store_contract.dart` — run by `InMemoryStore`, `PreferenceStoreImpl`
+  and `SecureStoreImpl`;
+- `paged_scroll_contract.dart` — run by `PagedListView` and `PagedGridView`.
+
+That is what makes adding a third store or a third scrollable layout safe: it
+inherits the assertions rather than a copy of them.

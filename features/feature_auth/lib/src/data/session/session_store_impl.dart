@@ -19,7 +19,7 @@ final class SessionStoreImpl implements SessionStore {
   final SecureStore _secureStore;
   final AppLogger _logger;
 
-  final StreamController<SessionStatus> _changes = StreamController<SessionStatus>.broadcast();
+  final StreamController<SessionSnapshot> _changes = StreamController<SessionSnapshot>.broadcast();
 
   AuthSession? _current;
   SessionStatus _status = SessionStatus.unknown;
@@ -31,7 +31,12 @@ final class SessionStoreImpl implements SessionStore {
   AuthSession? get current => _current;
 
   @override
-  Stream<SessionStatus> get changes => _changes.stream;
+  Stream<SessionSnapshot> get changes => _changes.stream;
+
+  SessionSnapshot _snapshot = const SessionSnapshot.unknown();
+
+  @override
+  SessionSnapshot get snapshot => _snapshot;
 
   @override
   Future<Result<AuthSession?>> restore() async {
@@ -72,10 +77,19 @@ final class SessionStoreImpl implements SessionStore {
     return _secureStore.remove(_sessionKey);
   }
 
+  /// Deduplicates on the whole snapshot, not on the status.
+  ///
+  /// Comparing statuses alone silently dropped a profile update: `save()` with a
+  /// different user at an unchanged `authenticated` status returned here without
+  /// publishing, so no listener ever learned the user had changed. Saving the
+  /// *same* session twice still publishes once, which is what the original
+  /// deduplication was for.
   void _publish(SessionStatus next) {
-    if (_status == next) return;
+    final snapshot = SessionSnapshot(status: next, session: _current);
+    if (_snapshot == snapshot) return;
+    _snapshot = snapshot;
     _status = next;
-    if (!_changes.isClosed) _changes.add(next);
+    if (!_changes.isClosed) _changes.add(snapshot);
   }
 
   @override
