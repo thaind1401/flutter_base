@@ -63,7 +63,7 @@ AuthSession _sessionFor(String displayName) => AuthSession(
 void main() {
   group('SessionState', () {
     test('lists every field in props', () {
-      // Rule 12. Both BlocSelector and buildWhen decide by `==`; a field missing
+      // Rule 13. Both BlocSelector and buildWhen decide by `==`; a field missing
       // from props means no widget ever rebuilds when it changes. Asserted
       // field by field because nothing else can check this.
       const base = SessionState(status: SessionStatus.authenticated);
@@ -122,7 +122,7 @@ void main() {
     });
 
     test('a repeated session does not emit again', () async {
-      // The other half of rule 12: value equality is what stops a redundant
+      // The other half of rule 13: value equality is what stops a redundant
       // publish from rebuilding every subscriber.
       //
       // Note the first `put` below is deliberate rather than incidental. Bloc

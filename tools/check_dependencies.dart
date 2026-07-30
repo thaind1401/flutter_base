@@ -24,18 +24,19 @@ const Map<String, Set<String>> allowedDependencies = {
   'core_ui': {'core_kit', 'core_arch'},
   'mini_app_contract': {'core_kit', 'core_arch'},
   'feature_auth': {'core_kit', 'core_arch', 'core_ui', 'core_network', 'core_storage'},
-  'mini_app_sample': {'core_kit', 'core_arch', 'core_ui', 'mini_app_contract'},
-  'app': {
-    'core_kit',
-    'core_arch',
-    'core_ui',
-    'core_network',
-    'core_storage',
-    'mini_app_contract',
-    'feature_auth',
-    'mini_app_sample',
-  },
+  'app': {'core_kit', 'core_arch', 'core_ui', 'core_network', 'core_storage', 'mini_app_contract', 'feature_auth'},
 };
+
+/// The row a mini-app gets when one is added, kept here as a comment rather than
+/// as a live entry so nothing has to be invented under pressure later:
+///
+/// ```dart
+/// 'mini_app_yours': {'core_kit', 'core_arch', 'core_ui', 'mini_app_contract'},
+/// ```
+///
+/// Note what is absent from that set: no `feature_*`, and not `app`. Naming
+/// either fails this check, which is the enforcement ADR-0007 is about — the
+/// contract is the only channel to the host.
 
 /// Packages that legitimately have no tests yet, kept here rather than left
 /// implicit.

@@ -70,7 +70,6 @@ Packages are grouped by kind, and each directory keeps its full package name —
 | `core/core_ui` | Tokens, themes, widgets, overlays, l10n |
 | `mini_apps/mini_app_contract` | Host ↔ mini-app boundary |
 | `features/feature_auth` | Reference vertical slice |
-| `mini_apps/mini_app_sample` | Reference mini-app |
 | `app` | Composition root: DI, router, shell, session |
 
 The group is derived from the name prefix, not configured: `core_*` → `core/`,
@@ -102,20 +101,34 @@ Dependencies flow downward only and are **enforced** by
    only to files git is not already tracking, so anything committed before its
    rule existed stays tracked and no amount of ignoring removes it. That is how
    ten generated files, 197 build outputs and a whole FVM SDK got in here.
-10. **A screen is a tree of small `const` widgets, each on its own
-    `BlocSelector`.** One per region that changes independently, selecting the
-    narrowest slice it renders; a **record** when it needs two fields, because
-    records have value equality. `BlocBuilder` without `buildWhen` only when the
-    whole state is the one thing on screen (`ArticleListScreen`); `BlocBuilder`
-    with `buildWhen` is a last resort, because the condition and the data the
-    builder reads are separate expressions that drift silently. Copy
-    `login_screen.dart`. ADR-0008.
-11. **State carries what the view renders.** A field shown on screen but read
+10. **Every screen extends one of three bases**, and never writes its own
+    scaffold: `BaseScreen` for one block of data or a form, `BaseListScreen<B,T>`
+    for a paginated list, `BaseGridScreen<B,T>` for a paginated grid. All three
+    are in `core_ui`. The base owns the chrome — keyboard dismissal, safe area,
+    bottom bar above the home indicator, back-button policy — so a screen cannot
+    forget it. Override `buildBody`; `build` is `@nonVirtual`.
+
+    Pagination, not the widget, decides the base. A `ListView` of data that
+    arrives complete is a `BaseScreen` (`HomeScreen`) — reaching for
+    `BaseListScreen` there demands an `onLoadMore` with nothing to load. A plain
+    screen has no paging API at all: those hooks live on a private intermediate
+    class, so `onLoadMore` does not compile on a `BaseScreen` subclass.
+11. **Inside `buildBody`, a screen is a tree of small `const` widgets, each on
+    its own `BlocSelector`.** One per region that changes independently,
+    selecting the narrowest slice it renders; a **record** when it needs two
+    fields, because records have value equality. The base wraps `buildBody` in
+    no builder and subscribes to nothing, so this rule is unchanged by rule 10.
+    `BlocBuilder` without `buildWhen` only when the whole state is the one thing
+    on screen — which is why `BaseListScreen` may use one internally;
+    `BlocBuilder` with `buildWhen` is a last resort, because the condition and
+    the data the builder reads are separate expressions that drift silently.
+    Copy `login_screen.dart`. ADR-0008.
+12. **State carries what the view renders.** A field shown on screen but read
     from outside the state — a getter on the cubit, `getIt`, a service — never
     triggers a rebuild when it changes. `HomeScreen` displayed
     `context.read<SessionCubit>().user` while rebuilding on `SessionStatus`, so
     a profile change at a steady status never appeared.
-12. **Every state class extends `Equatable` and lists every field in `props`.**
+13. **Every state class extends `Equatable` and lists every field in `props`.**
     `BlocSelector` and `buildWhen` both decide by `==`. A missing field means
     that field never rebuilds anything. `core_arch` re-exports `Equatable`.
 
@@ -156,13 +169,20 @@ So, in addition:
   annotation is missing from `CODEGEN_PACKAGES` — or is listed there while
   annotating nothing, which was costing a pointless `build_runner` run in
   `core_arch`.
+- **This base ships no mini-app.** `mini_app_contract` and `MiniAppRegistry`
+  remain, and `Bootstrap.run()` passes an empty list, so a package written
+  against the contract drops in without rebuilding the mechanism. The reference
+  implementation was deleted — the condition in ADR-0007 did not hold — so
+  **read ADR-0007 before adding one at all**: it states the single condition
+  under which a mini-app beats a plain feature, and a `feature_*` package with a
+  `RouteModule` is the right answer unless that condition is met.
 - **A new mini-app must extend `app/test/app_smoke_test.dart`** so its entry
   point is tapped and its screen renders. Mini-apps register at runtime through
   `registerDependencies(getIt, host)`, not through a micro-package module, so
   they get no build-time warning for a missing registration — opening the screen
-  is the only thing that notices. Read ADR-0007 before adding one at all; it
-  states the single condition under which a mini-app beats a plain feature, and
-  says to delete the concept if that condition does not hold.
+  is the only thing that notices. That test does not exist right now, because
+  there is no mini-app to tap; `app_smoke_test.dart` says so where it used to
+  live. Restoring it is part of adding a mini-app, not optional follow-up.
 - **A new package arrives with tests.** `make check-deps` fails if any workspace
   package has no `*_test.dart`, or has tests that `TEST_PACKAGES` never runs.
   There is a `packagesWithoutTests` escape hatch in

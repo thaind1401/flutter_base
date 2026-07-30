@@ -4,7 +4,7 @@ import 'package:core_kit/core_kit.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends BaseScreen {
   const SettingsScreen({super.key, required this.themeMode, required this.onThemeModeChanged});
 
   static const RouteSpec spec = RouteSpec(name: 'settings', path: '/settings');
@@ -13,46 +13,48 @@ class SettingsScreen extends StatelessWidget {
   final ValueChanged<ThemeMode> onThemeModeChanged;
 
   @override
-  Widget build(BuildContext context) {
-    return AppScaffold(
-      title: 'Settings',
-      padded: true,
-      body: ListView(
-        children: [
-          Text('Appearance', style: context.textStyles.titleSm),
-          SizedBox(height: context.dimens.space8),
-          ValueListenableBuilder<ThemeMode>(
-            valueListenable: themeMode,
-            builder: (context, mode, _) => SegmentedButton<ThemeMode>(
-              segments: const [
-                ButtonSegment(value: ThemeMode.system, label: Text('System')),
-                ButtonSegment(value: ThemeMode.light, label: Text('Light')),
-                ButtonSegment(value: ThemeMode.dark, label: Text('Dark')),
-              ],
-              selected: {mode},
-              onSelectionChanged: (selection) => onThemeModeChanged(selection.first),
-            ),
+  String? title(BuildContext context) => 'Settings';
+
+  @override
+  bool get padded => true;
+
+  @override
+  Widget buildBody(BuildContext context) {
+    return ListView(
+      children: [
+        Text('Appearance', style: context.textStyles.titleSm),
+        SizedBox(height: context.dimens.space8),
+        ValueListenableBuilder<ThemeMode>(
+          valueListenable: themeMode,
+          builder: (context, mode, _) => SegmentedButton<ThemeMode>(
+            segments: const [
+              ButtonSegment(value: ThemeMode.system, label: Text('System')),
+              ButtonSegment(value: ThemeMode.light, label: Text('Light')),
+              ButtonSegment(value: ThemeMode.dark, label: Text('Dark')),
+            ],
+            selected: {mode},
+            onSelectionChanged: (selection) => onThemeModeChanged(selection.first),
           ),
-          SizedBox(height: context.dimens.space32),
-          AppButton.danger(
-            label: 'Sign out',
-            icon: Icons.logout_rounded,
-            onPressed: () async {
-              final confirmed = await context.confirm(
-                title: 'Sign out?',
-                message: 'You will need to sign in again to continue.',
-                confirmLabel: 'Sign out',
-                isDestructive: true,
-              );
-              // The dialog awaited across a frame; the screen may be gone.
-              if (!confirmed || !context.mounted) return;
-              await context.read<SessionCubit>().signOut();
-            },
-          ),
-          SizedBox(height: context.dimens.space24),
-          const _EnvironmentBanner(),
-        ],
-      ),
+        ),
+        SizedBox(height: context.dimens.space32),
+        AppButton.danger(
+          label: 'Sign out',
+          icon: Icons.logout_rounded,
+          onPressed: () async {
+            final confirmed = await context.confirm(
+              title: 'Sign out?',
+              message: 'You will need to sign in again to continue.',
+              confirmLabel: 'Sign out',
+              isDestructive: true,
+            );
+            // The dialog awaited across a frame; the screen may be gone.
+            if (!confirmed || !context.mounted) return;
+            await context.read<SessionCubit>().signOut();
+          },
+        ),
+        SizedBox(height: context.dimens.space24),
+        const _EnvironmentBanner(),
+      ],
     );
   }
 }

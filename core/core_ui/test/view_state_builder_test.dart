@@ -212,7 +212,7 @@ void main() {
     testWidgets('does not rebuild when the selected slice is unchanged', (tester) async {
       // buildWhen compares the selected ViewState by ==, which is why every
       // state class extends Equatable. If that comparison degrades to identity
-      // this test fails and rule 12 has been broken somewhere upstream.
+      // this test fails and rule 13 has been broken somewhere upstream.
       final bloc = _Bloc();
       addTearDown(bloc.close);
       var builds = 0;

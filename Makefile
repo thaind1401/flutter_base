@@ -18,7 +18,7 @@ DART    ?= fvm dart
 # Paths, because packages are grouped by kind. Keep in sync with the root
 # pubspec's `workspace:` list — `make check-deps` fails if one drifts.
 PACKAGES := core/core_kit core/core_storage core/core_network core/core_arch core/core_ui \
-            mini_apps/mini_app_contract features/feature_auth mini_apps/mini_app_sample app
+            mini_apps/mini_app_contract features/feature_auth app
 
 # Packages that run build_runner, and packages that have tests. Both lists are
 # checked against the source tree by `make check-deps`: a package that carries
@@ -27,7 +27,7 @@ PACKAGES := core/core_kit core/core_storage core/core_network core/core_arch cor
 # these by hand without the other change is caught rather than shipped.
 CODEGEN_PACKAGES := core/core_storage core/core_network core/core_ui features/feature_auth app
 TEST_PACKAGES := core/core_kit core/core_storage core/core_network core/core_arch core/core_ui \
-                 mini_apps/mini_app_contract mini_apps/mini_app_sample features/feature_auth app
+                 mini_apps/mini_app_contract features/feature_auth app
 
 FLAVOR ?= dev
 DEFINES = --dart-define-from-file=env_config/$(FLAVOR)/dart_defines.json

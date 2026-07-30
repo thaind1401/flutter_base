@@ -161,28 +161,40 @@ void main() {
     expect(find.text('Welcome back'), findsOneWidget);
   });
 
-  testWidgets('a mini-app opens from home with its own dependencies resolved', (tester) async {
+  testWidgets('home renders with no mini-apps installed', (tester) async {
+    // This base ships an empty registry (see Bootstrap.run), so the shape that
+    // has to keep working is the empty one: the host still builds its entry
+    // point area, and `MiniAppRegistry(const [])` contributes no routes to
+    // AppRouterBuilder. An empty list reaching a widget that assumed at least
+    // one element is the failure this catches.
     _keychain['auth.session'] = _storedSession();
 
     final bootstrap = await Bootstrap.run();
     await tester.pumpWidget(App(bootstrap: bootstrap));
     await tester.pumpAndSettle();
 
-    // This is the mini-app equivalent of the injectable generator's
-    // "I cannot see this registration" warning, which mini-apps do not get:
-    // they register at runtime through `registerDependencies(getIt, host)`
-    // rather than through a micro-package module, so nothing at build time
-    // notices a missing one. Opening the screen for real does.
-    //
-    // Deliberately driven through the entry point rather than by navigating to
-    // the path directly — that exercises MiniAppRegistry.entryPointsFor, the
-    // host's rendering of it, and onOpen, which is the whole install path.
-    await tester.tap(find.text('Articles'));
-    await tester.pumpAndSettle();
-
-    expect(tester.takeException(), isNull, reason: 'a mini-app dependency was never registered');
-    expect(find.textContaining('Sample article #1'), findsOneWidget);
+    expect(bootstrap.registry.miniApps, isEmpty);
+    expect(tester.takeException(), isNull);
+    // The signed-in user's card, which is unique to home — 'Home' itself appears
+    // twice, as the app bar title and the shell's navigation label.
+    expect(find.text('Signed In'), findsOneWidget, reason: 'home still renders without any mini-app');
+    // HomeScreen omits the whole section when there are no entries, rather than
+    // drawing an empty heading. That is the behaviour an empty registry relies
+    // on, so it is asserted rather than left to chance.
+    expect(find.text('Apps'), findsNothing);
   });
+
+  // What is deliberately NOT covered any more, so the gap is visible rather
+  // than assumed: a mini-app being opened from its entry point on home. That
+  // test tapped 'Articles' in the sample mini-app and asserted its screen
+  // rendered, which was the only check that `registerDependencies(getIt, host)`
+  // had actually provided everything the screen resolves — mini-apps register
+  // at runtime, so nothing at build time notices a missing registration.
+  //
+  // `mini_app_contract`'s own tests cover the registry mechanics against fake
+  // mini-apps, including the empty case. They cannot cover the host reaching a
+  // real one. **Adding a mini-app means restoring a test here that taps its
+  // entry point and asserts its screen renders** — see ADR-0007 and CLAUDE.md.
 
   testWidgets('losing the session mid-run redirects off the protected screen', (tester) async {
     _keychain['auth.session'] = _storedSession();

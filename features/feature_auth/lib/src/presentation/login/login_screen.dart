@@ -18,48 +18,58 @@ import 'package:flutter/material.dart';
 /// password field rebuilds the password field, not the email field, not the
 /// button, not the scaffold. See ADR-0008 for why this is the default rather
 /// than an optimisation applied later.
-class LoginScreen extends StatelessWidget {
+/// A [BaseScreen], not a [BaseListScreen] — this is a form. Its state holds an
+/// email, a password, their errors and the submit state all at once, which is
+/// why it has its own state class and one `BlocSelector` per field rather than a
+/// `PagedViewState`.
+class LoginScreen extends BaseScreen {
   const LoginScreen({super.key, this.onAuthenticated});
 
   /// Where to go after a successful sign-in. Injected by the host so this
   /// package does not need to know the app's home route exists.
   final VoidCallback? onAuthenticated;
 
+  /// No title, so no app bar: login is the first screen and has nowhere to go
+  /// back to.
   @override
-  Widget build(BuildContext context) {
+  bool get padded => true;
+
+  /// The effect listener sits inside the scaffold rather than around it, because
+  /// the base owns the scaffold now. That is the better side of the boundary
+  /// anyway: `showFailureToast` resolves its messenger against a context that
+  /// has the Scaffold as a descendant.
+  @override
+  Widget buildBody(BuildContext context) {
     return BlocEffectListener<LoginBloc, LoginEffect>(
       onEffect: (context, effect) => switch (effect) {
         LoginSucceeded() => onAuthenticated?.call(),
         LoginFailed(:final failure) => context.showFailureToast(failure),
       },
-      child: const _LoginView(),
+      child: const _LoginForm(),
     );
   }
 }
 
-class _LoginView extends StatelessWidget {
-  const _LoginView();
+class _LoginForm extends StatelessWidget {
+  const _LoginForm();
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
-      padded: true,
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(height: context.dimens.space48),
-            Text('Welcome back', style: context.textStyles.titleLg),
-            SizedBox(height: context.dimens.space4),
-            Text('Sign in to continue', style: context.textStyles.bodyMd.copyWith(color: context.colors.textSecondary)),
-            SizedBox(height: context.dimens.space32),
-            const _EmailField(),
-            SizedBox(height: context.dimens.space16),
-            const _PasswordField(),
-            SizedBox(height: context.dimens.space24),
-            const _SubmitButton(),
-          ],
-        ),
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(height: context.dimens.space48),
+          Text('Welcome back', style: context.textStyles.titleLg),
+          SizedBox(height: context.dimens.space4),
+          Text('Sign in to continue', style: context.textStyles.bodyMd.copyWith(color: context.colors.textSecondary)),
+          SizedBox(height: context.dimens.space32),
+          const _EmailField(),
+          SizedBox(height: context.dimens.space16),
+          const _PasswordField(),
+          SizedBox(height: context.dimens.space24),
+          const _SubmitButton(),
+        ],
       ),
     );
   }

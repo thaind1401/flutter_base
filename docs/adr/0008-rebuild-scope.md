@@ -53,7 +53,7 @@ keeps the guarantee. Reaching for `BlocBuilder` because "it's two fields" throws
 away the property for no gain.
 
 `BlocBuilder` without `buildWhen` remains correct in exactly one case: **the
-whole state is the one thing on screen.** `ArticleListScreen` is the example —
+whole state is the one thing on screen.** `BaseListScreen` is the example —
 `PagedListView` reads items, `hasMore`, `isRefreshing` and the failure, so
 selecting field by field would rebuild the same widget for the same reasons with
 more code. The test is whether anything on the screen is independent of the
@@ -107,7 +107,7 @@ Two corollaries:
   multiplying the thing that is expensive to wire, and it does not help a form
   whose fields genuinely share one validation state.
 - **A tool check banning `BlocBuilder` outside `core_ui`.** Considered and
-  rejected: it would have flagged `ArticleListScreen`, which is correct as
+  rejected: it would have flagged `BaseListScreen`, which is correct as
   written, and a rule that cries wolf is a rule that gets suppressed.
 
 ## Applying it

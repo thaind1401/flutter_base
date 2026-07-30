@@ -36,8 +36,7 @@ flutter_base/
 │   └── feature_auth/           reference implementation — read this first
 │
 ├── mini_apps/                  pluggable apps, contract-only coupling
-│   ├── mini_app_contract/      host ↔ mini-app boundary
-│   └── mini_app_sample/        reference implementation — paginated list
+│   └── mini_app_contract/      host ↔ mini-app boundary (no mini-app ships)
 │
 ├── docs/                       architecture, ADRs, theming, flavors
 ├── tools/                      rename, dependency guard, coverage
@@ -57,10 +56,9 @@ Two conventions keep this navigable as the repo grows:
   from it. A package called `shared_utils` resolves to no group, fails to be
   found, and is reported — so a fourth, unnamed category cannot appear quietly.
 
-Of the nine packages, six are infrastructure. `feature_auth` and
-`mini_app_sample` are reference implementations meant to be replaced, and `app`
-is your application. Starting a real project is closer to "six packages plus
-your code" than to nine.
+Of the eight packages, six are infrastructure. `feature_auth` is a reference
+implementation meant to be replaced, and `app` is your application. Starting a
+real project is closer to "six packages plus your code" than to eight.
 
 ---
 
@@ -73,9 +71,8 @@ your code" than to nine.
 | `core_network` | Dio client, interceptors, the one place exceptions become `Failure` | `core_kit` |
 | `core_arch` | Use case, repository, bloc, view-state and routing bases | `core_kit` |
 | `core_ui` | Design tokens, themes, shared widgets, overlays, l10n | `core_kit`, `core_arch` |
-| `mini_app_contract` | The host ↔ mini-app boundary | `core_kit`, `core_arch` |
+| `mini_app_contract` | The host ↔ mini-app boundary — kept so one can be added later; no mini-app ships (ADR-0007) | `core_kit`, `core_arch` |
 | `feature_auth` | **Reference vertical slice** — read this first | core packages |
-| `mini_app_sample` | **Reference mini-app** — paginated list | `mini_app_contract` + core |
 | `app` | Composition root: DI, router, shell, session gate | everything |
 
 The dependency table is enforced, not documented: `make check-deps` fails the
@@ -134,10 +131,9 @@ restating it, because two copies of a rule become two different rules. See
 1. **`feature_auth`** — a complete feature: entity, repository
    interface, implementation, use cases, Retrofit data source, bloc, screen,
    route module. Every new feature is this shape.
-2. **`mini_app_sample`** — a complete mini-app, including pagination.
-3. **`app/lib/app/di/injection.dart`** — how the packages are composed.
-4. **`docs/architecture.md`** — the rules and the reasoning behind them.
-5. **`docs/adr/`** — why each significant decision was made, including the ones
+2. **`app/lib/app/di/injection.dart`** — how the packages are composed.
+3. **`docs/architecture.md`** — the rules and the reasoning behind them.
+4. **`docs/adr/`** — why each significant decision was made, including the ones
    that were rejected.
 
 ---
@@ -147,7 +143,7 @@ restating it, because two copies of a rule become two different rules. See
 | Task | Where |
 |---|---|
 | A new feature | `docs/adding_a_feature.md` |
-| A new mini-app | copy `mini_app_sample`, add one line in `app/lib/app/bootstrap.dart` |
+| A new mini-app | read ADR-0007 first — a `feature_*` is usually right; if not, write against `mini_app_contract` and add one line in `app/lib/app/bootstrap.dart` |
 | A new screen in an existing feature | that feature's `presentation/` + its `RouteModule` |
 | Brand colours, fonts | `docs/theming.md` |
 | A new environment variable | `core/core_kit/lib/src/config/app_environment.dart` + `app/env_config/*` |

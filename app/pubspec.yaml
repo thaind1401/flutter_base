@@ -24,7 +24,6 @@ dependencies:
   core_storage: ^1.0.0
   mini_app_contract: ^1.0.0
   feature_auth: ^1.0.0
-  mini_app_sample: ^1.0.0
   get_it: ^9.2.1
   injectable: ^3.0.0
   device_info_plus: ^13.2.0

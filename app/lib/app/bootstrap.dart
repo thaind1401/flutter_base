@@ -8,7 +8,6 @@ import 'package:core_kit/core_kit.dart';
 import 'package:feature_auth/feature_auth.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mini_app_contract/mini_app_contract.dart';
-import 'package:mini_app_sample/mini_app_sample.dart';
 
 /// Everything that must happen before the first frame, and nothing else.
 ///
@@ -61,8 +60,14 @@ final class Bootstrap {
     );
 
     // The only place a mini-app package is named. Adding one is a line here
-    // plus a pubspec dependency.
-    final registry = MiniAppRegistry([SampleMiniApp()], logger: logger)..registerDependencies(getIt, host);
+    // plus a pubspec dependency — that is the whole installation cost, and the
+    // reason this list is empty rather than the mechanism being deleted.
+    //
+    // Empty on purpose: this base ships no mini-app. The contract, the registry
+    // and the host adapter stay, so a package built against
+    // `mini_app_contract` drops in here without any of them being rebuilt
+    // first. ADR-0007 has the condition under which that is worth doing.
+    final registry = MiniAppRegistry(const [], logger: logger)..registerDependencies(getIt, host);
 
     logger.info('bootstrap complete for ${getIt<AppEnvironmentConfig>().environment.name}', tag: 'startup');
     return BootstrapResult(

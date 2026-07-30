@@ -24,9 +24,8 @@ const double threshold = 70;
 /// impossible to hide.
 ///
 /// Raised 20 → 50. Not higher yet, and the reason is specific rather than
-/// cautious: `mini_app_sample` is at 53.0%, `feature_auth` at 55.7% and
-/// `core_kit` at 55.9%. 60 is the next step and it needs those three covered,
-/// not a change to this line.
+/// cautious: `feature_auth` sits at 55.7% and `core_kit` at 55.9%. 60 is the
+/// next step and it needs those two covered, not a change to this line.
 const double packageThreshold = 50;
 
 /// Packages allowed below [packageThreshold], with the reason.
