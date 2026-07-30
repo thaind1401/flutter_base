@@ -16,9 +16,6 @@ dependencies:
   dio: ^5.9.0
   connectivity_plus: ^7.0.0
   injectable: ^3.0.0
-  # Retrofit's runtime only; the generator is a dev dependency of the packages
-  # that actually declare `@RestApi` data sources.
-  retrofit: ^4.9.0
 
 dev_dependencies:
   flutter_test:
