@@ -30,10 +30,16 @@ import 'package:integration_test/integration_test.dart';
 /// cannot run is a gate nobody trusts. `.github/workflows/integration.yml`
 /// boots an Android emulator and runs this on a schedule and on demand.
 ///
-/// **These run under a flavor.** `make integration` passes the dev defines, and
-/// dev sets `DEV_AUTH_BYPASS` — so the app seeds a session and goes straight to
-/// home. Assert the rule the flavor implies, not one flavor's outcome; the boot
-/// test below failed on its first real run for exactly that reason.
+/// **These run under a flavor, and the flavor is not fixed.** `make integration`
+/// passes `env_config/dev/dart_defines.json`, which is gitignored and generated
+/// once from the sample — `make env` leaves an existing file alone, so a clone
+/// created before `DEV_AUTH_BYPASS` was added to the sample simply does not have
+/// it. Whether the app lands on login or on home therefore depends on the
+/// machine, not on the code.
+///
+/// So assert the *rule* the config implies, never one config's outcome. The boot
+/// test below hardcoded the login screen and failed on its first real run for
+/// exactly that reason.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -54,15 +60,14 @@ void main() {
 
     expect(tester.takeException(), isNull);
 
-    // The destination is decided by the flavor, so the assertion has to be too.
-    // This test originally hardcoded the login screen and failed on the first
-    // real run: `make integration` passes the dev defines, and dev sets
-    // `DEV_AUTH_BYPASS`, which seeds a session before the first frame — so the
-    // app correctly goes straight to home and login is never shown.
+    // The destination is decided by the config, so the assertion has to be too.
+    // `DEV_AUTH_BYPASS` seeds a session before the first frame, and it is read
+    // from a gitignored env file whose contents differ per machine.
     //
     // Asserting the *rule* rather than one of its outcomes is what makes this
-    // useful in both directions: it now also fails if a build with the bypass
-    // off silently skips login, or if a build with it on still shows one.
+    // useful in both directions: it fails if a build with the bypass on still
+    // shows login, and if a build with it off silently skips login — which is
+    // the one that would matter in production.
     if (getIt<AppEnvironmentConfig>().devAuthBypass) {
       expect(find.text('Welcome back'), findsNothing, reason: 'the bypass must skip login entirely');
       expect(find.text('Dev Bypass'), findsOneWidget, reason: 'the seeded session should land on home');
