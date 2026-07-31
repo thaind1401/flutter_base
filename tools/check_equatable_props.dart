@@ -1,7 +1,7 @@
 // Fails the build when an Equatable class declares a field it leaves out of
 // `props`.
 //
-// Rule 13 says every state class lists every field in `props`, and gives the
+// Rule 14 says every state class lists every field in `props`, and gives the
 // reason: `BlocSelector` and `buildWhen` both decide by `==`, so a field missing
 // from `props` never rebuilds anything. Nothing enforced that. The failure is
 // silent in the worst way — the state is correct, the widget is correct, and the

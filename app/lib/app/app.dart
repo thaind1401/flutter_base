@@ -11,9 +11,9 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 /// The root widget.
 ///
-/// Stateful only because it owns the router and the theme-mode notifier, both
-/// of which must survive rebuilds. Rebuilding a `GoRouter` resets the
-/// navigation stack, which is the classic "why did my app jump to home?" bug.
+/// Stateful only because it owns the router, which must survive rebuilds:
+/// rebuilding a `GoRouter` resets the navigation stack, which is the classic
+/// "why did my app jump to home?" bug.
 class App extends StatefulWidget {
   const App({super.key, required this.bootstrap});
 
@@ -24,7 +24,6 @@ class App extends StatefulWidget {
 }
 
 class _AppState extends State<App> {
-  final ValueNotifier<ThemeMode> _themeMode = ValueNotifier(ThemeMode.system);
   late final AppRouter _appRouter;
 
   @override
@@ -34,26 +33,24 @@ class _AppState extends State<App> {
       session: widget.bootstrap.session,
       miniApps: widget.bootstrap.registry,
       loginBlocFactory: getIt.call<LoginBloc>,
-      themeMode: _themeMode,
-      onThemeModeChanged: (mode) => _themeMode.value = mode,
+      themeMode: widget.bootstrap.themeMode,
       logger: getIt<AppLogger>(),
     );
     // Completes the deferred navigator the mini-apps were handed at bootstrap.
     widget.bootstrap.navigatorBinder(GoRouterNavigator(_appRouter.router));
   }
 
-  @override
-  void dispose() {
-    _themeMode.dispose();
-    super.dispose();
-  }
+  // No `dispose` for the theme controller: it is a `@lazySingleton` owned by
+  // the container, and `App` is handed it rather than creating it. Disposing a
+  // notifier you do not own is how a hot restart ends up rendering against a
+  // dead `ValueNotifier`; `getIt.reset()` is what ends its life.
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       session: widget.bootstrap.session,
       child: ValueListenableBuilder<ThemeMode>(
-        valueListenable: _themeMode,
+        valueListenable: widget.bootstrap.themeMode,
         builder: (context, themeMode, _) => MaterialApp.router(
           debugShowCheckedModeBanner: false,
           routerConfig: _appRouter.router,

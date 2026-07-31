@@ -10,10 +10,14 @@ import 'dart:io';
 
 /// Minimum line coverage across the workspace, as a percentage.
 ///
-/// Raised 40 → 70 once core_arch and core_ui were covered; the workspace sits
-/// at 72.8%. A threshold far below the real number ratchets nothing — it lets
-/// coverage decay for years before anyone hears about it.
-const double threshold = 70;
+/// Raised 40 → 70 once core_arch and core_ui were covered, then 70 → 85 once
+/// the three laggards were: `core_kit` 55.9 → 83.6, `core_network` 61.5 → 92.0,
+/// `feature_auth` 54.7 → 93.9. The workspace sits at 87.3%.
+///
+/// A threshold far below the real number ratchets nothing — it lets coverage
+/// decay for years before anyone hears about it. Two points of headroom is
+/// enough to absorb a refactor without becoming a licence to drop ten.
+const double threshold = 85;
 
 /// Minimum line coverage for any single package.
 ///
@@ -23,10 +27,13 @@ const double threshold = 70;
 /// project ended up with four untested packages. A floor per package makes that
 /// impossible to hide.
 ///
-/// Raised 20 → 50. Not higher yet, and the reason is specific rather than
-/// cautious: `feature_auth` sits at 55.7% and `core_kit` at 55.9%. 60 is the
-/// next step and it needs those two covered, not a change to this line.
-const double packageThreshold = 50;
+/// Raised 20 → 50 → 60. The reason for stopping at 60 is specific rather than
+/// cautious: `app` sits at 64.2% and is now the only package anywhere near the
+/// floor. It is the composition root — DI wiring, the router, the shell — and
+/// what covers it is `app_smoke_test.dart` booting the real app, not unit tests
+/// of glue. 75 is the next step and it needs the shell screens exercised, not a
+/// change to this line.
+const double packageThreshold = 60;
 
 /// Packages allowed below [packageThreshold], with the reason.
 ///

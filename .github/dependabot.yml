@@ -1,0 +1,61 @@
+# Dependency updates, proposed as pull requests that run the full gate.
+#
+# The value here is not novelty. It is that `make ci` runs against every bump
+# before a human looks at it, so "does this break us?" is answered by the
+# pipeline instead of by whoever eventually tries the upgrade under deadline.
+# This repo has already been through one painful catch-up — `flutter_secure_
+# storage` 9 -> 10, `get_it` 8 -> 9, `device_info_plus` 12 -> 13 in a single
+# batch of commits. Weekly, one at a time, that is a five-minute review each.
+#
+# One ecosystem entry, not one per package: this is a **pub workspace** with a
+# single resolution and a single `pubspec.lock` at the root, so a per-package
+# directory would produce overlapping PRs that all edit the same lock file.
+
+version: 2
+
+updates:
+  - package-ecosystem: pub
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '02:00'
+      timezone: Asia/Ho_Chi_Minh
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: build
+    labels: [dependencies]
+    groups:
+      # Bloc, injectable/get_it and the build toolchain each move as a set —
+      # bumping `injectable` without `injectable_generator` produces generated
+      # code that no longer matches its annotations, and the failure surfaces as
+      # an unrelated analyze error in a barrel file.
+      bloc:
+        patterns: [bloc, flutter_bloc, bloc_concurrency, bloc_test]
+      injection:
+        patterns: [get_it, injectable, injectable_generator]
+      codegen:
+        patterns: [build_runner, json_serializable, json_annotation, retrofit, retrofit_generator, source_gen]
+      # Patch and minor bumps of everything else in one PR. A lock file churning
+      # across six separate PRs a week is how people start merging without
+      # reading, which defeats the point.
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # The SDK pin lives in `.fvmrc` and is read from there by every workflow.
+      # A bot editing the constraint in `pubspec.yaml` would create a second,
+      # disagreeing copy of the pin — see the comment at the top of ci.yml about
+      # exactly that failure mode.
+      - dependency-name: flutter
+      - dependency-name: flutter_test
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: ci
+    labels: [dependencies]
+    groups:
+      actions:
+        patterns: ['*']

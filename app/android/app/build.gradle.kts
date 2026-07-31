@@ -8,7 +8,15 @@ plugins {
 android {
     namespace = "com.example.flutterbase"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "27.0.12077973"
+    // Pinned to the highest version any plugin asks for, which is what the
+    // Gradle warning tells you to do — NDK releases are backward compatible, so
+    // the highest requirement wins and a lower pin is simply wrong.
+    //
+    // Raised 27.0 -> 28.2 when `integration_test` was added as a dev dependency.
+    // It is only a warning today and the debug build still succeeded, which is
+    // exactly why it is worth pinning now rather than after it becomes an error
+    // on someone else's machine.
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

@@ -2,15 +2,14 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'support/host.dart';
+
 /// The reason every button routes through this widget is the double-submit bug:
 /// tap, wait, tap again, two leave requests. `isLoading` disabling the button is
 /// the guarantee, so it is what gets tested hardest here.
 
 void main() {
-  Widget host(Widget child) => MaterialApp(
-    theme: AppTheme.light(),
-    home: Scaffold(body: child),
-  );
+  Widget host(Widget child) => testHost(child);
 
   testWidgets('renders its label and fires onPressed', (tester) async {
     var taps = 0;

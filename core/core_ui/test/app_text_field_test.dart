@@ -3,16 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'support/host.dart';
+
 /// The field takes [AppTextField.errorText] from the bloc's FormzInput rather
 /// than running its own validator, so the submit button's enabled state and the
 /// field's error come from one source. The tests below pin that direction: the
 /// widget displays what it is told and never decides.
 
 void main() {
-  Widget host(Widget child) => MaterialApp(
-    theme: AppTheme.light(),
-    home: Scaffold(body: child),
-  );
+  Widget host(Widget child) => testHost(child);
 
   testWidgets('renders label, hint and helper', (tester) async {
     await tester.pumpWidget(

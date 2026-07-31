@@ -1,5 +1,6 @@
 import 'package:app/app/shell/home_screen.dart';
 import 'package:app/app/shell/settings_screen.dart';
+import 'package:app/app/theme/theme_mode_controller.dart';
 import 'package:core_arch/core_arch.dart';
 import 'package:flutter/material.dart';
 import 'package:mini_app_contract/mini_app_contract.dart';
@@ -43,11 +44,15 @@ class AppShell extends StatelessWidget {
 /// into the router. That symmetry is what lets a screen move from the host into
 /// a feature package later without the router changing.
 final class ShellRouteModule implements RouteModule {
-  const ShellRouteModule({required this.registry, required this.themeMode, required this.onThemeModeChanged});
+  const ShellRouteModule({required this.registry, required this.themeMode});
 
   final MiniAppRegistryRef registry;
-  final ValueNotifier<ThemeMode> themeMode;
-  final ValueChanged<ThemeMode> onThemeModeChanged;
+
+  /// One object rather than the `ValueNotifier` + `ValueChanged` pair this used
+  /// to take. The pair was two halves of the same thing threaded separately
+  /// through three constructors, and nothing stopped a caller wiring the
+  /// callback to a different notifier than the one the screen listened to.
+  final ThemeModeController themeMode;
 
   @override
   String get id => 'shell';
@@ -65,7 +70,7 @@ final class ShellRouteModule implements RouteModule {
     GoRoute(
       name: SettingsScreen.spec.name,
       path: SettingsScreen.spec.path,
-      builder: (context, state) => SettingsScreen(themeMode: themeMode, onThemeModeChanged: onThemeModeChanged),
+      builder: (context, state) => SettingsScreen(themeMode: themeMode),
     ),
   ];
 }

@@ -70,5 +70,22 @@
   "connectivityRestored": "Back online",
 
   "loadMoreFailed": "Could not load more",
-  "pullToRefresh": "Pull to refresh"
+  "pullToRefresh": "Pull to refresh",
+
+  "a11yButtonBusy": "{label}, busy",
+  "@a11yButtonBusy": {
+    "description": "Screen-reader name for a button whose label has been replaced by a spinner. Without it the button announces as unnamed at exactly the moment the user needs to know what is running.",
+    "placeholders": { "label": { "type": "String" } }
+  },
+  "a11yShowPassword": "Show password",
+  "@a11yShowPassword": {
+    "description": "Tooltip and screen-reader name for the reveal toggle inside a password field."
+  },
+  "a11yHidePassword": "Hide password",
+  "a11yRequiredField": "required",
+  "@a11yRequiredField": {
+    "description": "Appended to a field's screen-reader name. The asterisk sighted users see is not announced."
+  },
+  "a11yLoadingMore": "Loading more items",
+  "a11yThemeMode": "Theme"
 }

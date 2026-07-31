@@ -24,15 +24,20 @@ make l10n         # regenerate core_ui localizations from ARB
 make analyze
 make fmt          # apply
 make fmt-check    # verify — this is what CI runs
-make test                              # every package
+make test                              # every package (golden tests excluded)
 make test PKG=core/core_storage        # one package
 make test PKG=app ARGS="--name boots"  # one test
+make golden        # design-system snapshots, light and dark
+make golden-update # rewrite them — then LOOK AT THE IMAGES
+make integration   # on a booted device/emulator; not part of `make ci`
+make integration DEVICE=emulator-5554   # when more than one phone is attached
 make test-coverage # per-package floor + workspace threshold
 make check-deps   # architecture boundaries + the Makefile package lists
 make check-props  # fail if an Equatable class omits a field from props
 make check-artifacts # fail if build output or generated code is tracked by git
 make ci           # the full gate
 make dev|stg|prod
+make ios-nosign    # release-path iOS compile without a signing identity
 make rename NAME="My App" ORG=com.acme.myapp
 ```
 
@@ -92,6 +97,12 @@ Dependencies flow downward only and are **enforced** by
 5. **A feature never imports another feature.** Use a contract in a core package.
 6. **No literals in widgets.** `context.colors.*`, `context.dimens.*`,
    `context.textStyles.*`. Missing token → add it to the token class.
+   A token change is an app-wide visual change, so `core/core_ui/test/goldens/`
+   holds a light and a dark snapshot of every widget it can break. `make golden`
+   verifies them; `make golden-update` rewrites them and the **images** are the
+   review. Text renders as boxes there — `flutter test` ships no font — so they
+   catch layout, spacing and colour but not font family or weight;
+   `golden_test.dart` says so at the top rather than implying otherwise.
 7. **`core_kit` never imports Flutter.**
 8. **Choose bloc event transformers deliberately** — `droppable()` for submit and
    load-more, `restartable()` for refresh and search. The default is wrong for
@@ -129,7 +140,18 @@ Dependencies flow downward only and are **enforced** by
     triggers a rebuild when it changes. `HomeScreen` displayed
     `context.read<SessionCubit>().user` while rebuilding on `SessionStatus`, so
     a profile change at a steady status never appeared.
-13. **Every state class extends `Equatable` and lists every field in `props`.**
+13. **A control with no name is a broken control.** Anything tappable needs an
+    accessible name, and losing one is invisible — the pixels do not change.
+    `AppButton` swaps its label for a spinner while loading, so it re-attaches
+    the name (`"Save, busy"`) *inside* the button; `AppTextField`'s reveal
+    toggle carries a `tooltip`; `AppSwitchTile` is one `Semantics` node for the
+    whole row rather than an unnamed region plus a switch. Copy those shapes,
+    and add the string to `core_en.arb`/`core_vi.arb` rather than hardcoding it.
+    `core_ui/test/accessibility_test.dart` asserts each one and runs Flutter's
+    `androidTapTargetGuideline`, `iOSTapTargetGuideline`, `textContrastGuideline`
+    and `labeledTapTargetGuideline` over a form in both themes.
+
+14. **Every state class extends `Equatable` and lists every field in `props`.**
     `BlocSelector` and `buildWhen` both decide by `==`. A missing field means
     that field never rebuilds anything — the state is right, the widget is
     right, and the screen does not update. `core_arch` re-exports `Equatable`.
@@ -147,9 +169,16 @@ Run `make codegen` after changing:
 
 ## Before saying a change is done
 
-`make fmt` + `make analyze` + `make test` + `make check-deps` +
+`make fmt` + `make analyze` + `make test` + `make golden` + `make check-deps` +
 `make check-props` + `make check-artifacts` — or just `make ci`. A change is not done until that is
 green.
+
+`make integration` is **not** in that gate and is not expected to be: it needs a
+booted device, CI runners have none, and a gate that cannot run everywhere is a
+gate people learn to skip. It runs nightly and on demand via
+`.github/workflows/integration.yml`. Run it locally after touching bootstrap,
+DI or storage — `app/test/app_smoke_test.dart` mocks secure storage, shared
+preferences and connectivity, so every device-only failure is invisible to it.
 
 **Green is necessary, not sufficient.** This whole gate once passed while the
 app could not open: `core_ui` carried a `@lazySingleton` but had no
@@ -188,6 +217,12 @@ So, in addition:
   is the only thing that notices. That test does not exist right now, because
   there is no mini-app to tap; `app_smoke_test.dart` says so where it used to
   live. Restoring it is part of adding a mini-app, not optional follow-up.
+- **A data source is tested against a stubbed transport, not the network.**
+  `core_network/testing.dart` is a second entry point carrying `StubHttpAdapter`
+  and `jsonResponse`; the main barrel deliberately withholds `HttpClientAdapter`
+  so production code cannot reach for it. Without that seam a feature has to
+  add a direct `dio` dependency or skip its data layer, and skipping is what
+  happened — `feature_auth`'s repository and refresh API both sat at 0%.
 - **A new package arrives with tests.** `make check-deps` fails if any workspace
   package has no `*_test.dart`, or has tests that `TEST_PACKAGES` never runs.
   There is a `packagesWithoutTests` escape hatch in

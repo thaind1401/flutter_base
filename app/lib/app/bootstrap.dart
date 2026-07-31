@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:app/app/di/injection.dart';
 import 'package:app/app/mini_apps/app_mini_app_host.dart';
 import 'package:app/app/session/session_cubit.dart';
+import 'package:app/app/theme/theme_mode_controller.dart';
 import 'package:core_arch/core_arch.dart';
 import 'package:core_kit/core_kit.dart';
 import 'package:feature_auth/feature_auth.dart';
@@ -51,6 +52,13 @@ final class Bootstrap {
     // whether a session exists, or a signed-in user sees the login screen flash.
     await session.restore();
 
+    // Same reasoning, one frame earlier: restoring the theme after the first
+    // frame means a user who chose dark watches the app flash light on every
+    // cold start. It is a single `SharedPreferences` read against an instance
+    // the container has already resolved, so it costs no round trip.
+    final themeMode = getIt<ThemeModeController>();
+    await themeMode.restore();
+
     final navigator = _LateNavigator();
     final host = AppMiniAppHost(
       session: session,
@@ -73,6 +81,7 @@ final class Bootstrap {
     return BootstrapResult(
       registry: registry,
       session: session,
+      themeMode: themeMode,
       connectivity: getIt<ConnectivityMonitor>(),
       navigatorBinder: navigator.bind,
     );
@@ -96,12 +105,18 @@ final class BootstrapResult {
   const BootstrapResult({
     required this.registry,
     required this.session,
+    required this.themeMode,
     required this.connectivity,
     required this.navigatorBinder,
   });
 
   final MiniAppRegistry registry;
   final SessionCubit session;
+
+  /// Already restored when this is handed to `App`, so the first frame paints
+  /// in the theme the user chose rather than switching into it.
+  final ThemeModeController themeMode;
+
   final ConnectivityMonitor connectivity;
 
   /// Called once the router exists, to complete the deferred navigator.

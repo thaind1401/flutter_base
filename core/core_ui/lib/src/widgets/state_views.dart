@@ -14,20 +14,32 @@ class AppLoader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: size,
-            height: size,
-            child: CircularProgressIndicator(strokeWidth: 2.5, color: context.colors.brand),
-          ),
-          if (message != null) ...[
-            SizedBox(height: context.dimens.space12),
-            Text(message!, style: context.textStyles.bodySm.copyWith(color: context.colors.textSecondary)),
+    // A bare `CircularProgressIndicator` contributes no semantics, so a screen
+    // reader lands on a page that appears empty and silent while it loads —
+    // indistinguishable from a broken screen. `liveRegion` makes the state
+    // announced when it appears rather than only when focus happens to reach it.
+    return Semantics(
+      label: message ?? CoreL10n.of(context).commonLoading,
+      liveRegion: true,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: size,
+              height: size,
+              child: CircularProgressIndicator(strokeWidth: 2.5, color: context.colors.brand),
+            ),
+            if (message != null) ...[
+              SizedBox(height: context.dimens.space12),
+              // Excluded because the label above already carries this text; left
+              // in, the message is announced twice.
+              ExcludeSemantics(
+                child: Text(message!, style: context.textStyles.bodySm.copyWith(color: context.colors.textSecondary)),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -67,7 +79,12 @@ class AppErrorView extends StatelessWidget {
           children: [
             Icon(_iconFor(failure), size: compact ? context.dimens.iconLg : 48, color: context.colors.textDisabled),
             SizedBox(height: context.dimens.space12),
-            Text(message.title, textAlign: TextAlign.center, style: context.textStyles.titleSm),
+            // `header: true` is what lets a screen reader's heading navigation
+            // jump straight to "what went wrong" instead of walking the page.
+            Semantics(
+              header: true,
+              child: Text(message.title, textAlign: TextAlign.center, style: context.textStyles.titleSm),
+            ),
             SizedBox(height: context.dimens.space4),
             Text(
               message.description,
@@ -133,10 +150,13 @@ class AppEmptyView extends StatelessWidget {
           children: [
             Icon(icon ?? Icons.inbox_outlined, size: 48, color: context.colors.textDisabled),
             SizedBox(height: context.dimens.space12),
-            Text(
-              title ?? (isSearch ? l10n.emptySearchTitle : l10n.emptyTitle),
-              textAlign: TextAlign.center,
-              style: context.textStyles.titleSm,
+            Semantics(
+              header: true,
+              child: Text(
+                title ?? (isSearch ? l10n.emptySearchTitle : l10n.emptyTitle),
+                textAlign: TextAlign.center,
+                style: context.textStyles.titleSm,
+              ),
             ),
             SizedBox(height: context.dimens.space4),
             Text(

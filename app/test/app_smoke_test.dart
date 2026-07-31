@@ -3,8 +3,10 @@ import 'dart:convert';
 import 'package:app/app/app.dart';
 import 'package:app/app/bootstrap.dart';
 import 'package:app/app/di/injection.dart';
+import 'package:app/app/theme/theme_mode_controller.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:feature_auth/feature_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -159,6 +161,50 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('Welcome back'), findsOneWidget);
+  });
+
+  testWidgets('the stored theme is applied on the first frame, not after it', (tester) async {
+    // The regression this exists for is not "dark mode does not work" — the
+    // unit test covers the controller. It is that `Bootstrap.run` might stop
+    // awaiting `themeMode.restore()`, at which point the app still ends up in
+    // dark, just one frame late, and every cold start flashes light. Only a
+    // test that boots the real app and looks at the *first* frame sees that.
+    SharedPreferences.setMockInitialValues({'flutter.${ThemeModeController.storageKey}': 'dark'});
+
+    final bootstrap = await Bootstrap.run();
+    await tester.pumpWidget(App(bootstrap: bootstrap));
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(bootstrap.themeMode.value, ThemeMode.dark);
+
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.themeMode, ThemeMode.dark);
+
+    // Resolved from a context *below* `MaterialApp`, not from its own element:
+    // `MaterialApp` builds the `Theme` as a descendant, so `Theme.of` on the
+    // element above it reads Flutter's fallback and passes no matter what the
+    // app was configured with. `LoadingOverlayHost` is mounted by the router's
+    // builder, which is inside that `Theme`.
+    expect(
+      Theme.of(tester.element(find.byType(LoadingOverlayHost))).brightness,
+      Brightness.dark,
+      reason: 'the first frame painted in light and switched afterwards',
+    );
+
+    // The assertions above are the point and they run on the first frame; this
+    // only drains the redirect the splash route schedules, which the binding
+    // otherwise reports as a pending timer at teardown.
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('no stored theme boots on system', (tester) async {
+    final bootstrap = await Bootstrap.run();
+    await tester.pumpWidget(App(bootstrap: bootstrap));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(bootstrap.themeMode.value, ThemeMode.system);
   });
 
   testWidgets('home renders with no mini-apps installed', (tester) async {

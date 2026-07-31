@@ -32,6 +32,13 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # Drives integration_test/, which boots the app on a real device against the
+  # real plugin channels. `app/test/app_smoke_test.dart` mocks secure storage,
+  # shared preferences and connectivity, so it can never catch a keychain
+  # entitlement, a missing Android permission or a plugin that fails to
+  # register — the failures that only exist on a device.
+  integration_test:
+    sdk: flutter
   # Used by injection_test.dart to seed the preference store's mock values.
   shared_preferences: ^2.5.5
   flutter_lints: ^6.0.0

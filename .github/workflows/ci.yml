@@ -60,12 +60,25 @@ jobs:
       - name: Materialise env files from the tracked samples
         run: make env
 
-      # get + l10n + codegen + fmt-check + analyze + test + check-deps.
+      # get + l10n + codegen + fmt-check + analyze + test + golden + check-deps.
       # Generated code is not committed, so `codegen` inside this target is what
       # creates it; a package missing from CODEGEN_PACKAGES fails `analyze` on
       # the barrel that exports the file it never produced.
       - name: Quality gate
         run: make ci
+
+      # Only produced when `make golden` failed. A red golden step is unreadable
+      # without the images, and asking the author to reproduce it locally is
+      # asking them to reproduce a renderer — the reason `make test` skips these
+      # in the first place.
+      - name: Upload golden diffs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-failures
+          path: core/core_ui/test/failures/
+          retention-days: 7
+          if-no-files-found: ignore
 
       - name: Coverage
         run: make test-coverage

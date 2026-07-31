@@ -86,7 +86,9 @@ build if a package imports across a forbidden boundary.
 make setup        # fresh clone: SDK + env files + pub get + l10n + codegen
 make dev          # run the dev flavor
 make codegen      # after changing a model, an API or a DI annotation
-make test         # every package
+make test         # every package (golden snapshots excluded)
+make golden       # design-system snapshots, light and dark
+make integration  # on a booted device/emulator — not part of `make ci`
 make ci           # the full gate — what CI runs
 make check-deps   # architecture boundaries
 make help         # everything else
@@ -194,3 +196,28 @@ Deliberately absent, because they are project decisions rather than base
 architecture: crash reporting, analytics, push notifications, deep links, and
 biometric login. `Bootstrap.runDeferredStartup` is where they belong, and it
 already runs after the first frame so adding one will not slow cold start.
+
+Present but needing your values before they do anything:
+
+- **`.github/CODEOWNERS.sample`** — copy to `CODEOWNERS` and replace the handles.
+  It ships as a sample because a CODEOWNERS naming a team that does not exist
+  fails *silently*: GitHub cannot request the review, and the file sits there
+  looking like coverage while everything merges unreviewed.
+- **Store upload** — `.github/workflows/release.yml` builds and attaches the AAB,
+  APK and debug symbols, and stops there. Signing identities and store
+  credentials are per-project secrets; the last comment block in that file is the
+  job to add once they exist.
+- **`make env` copies the *samples*.** They are placeholders. Point the release
+  workflow at real secrets before shipping anything from it.
+
+Genuinely partial:
+
+- **Golden tests render text as boxes.** `flutter test` ships no font, so the
+  snapshots catch layout, spacing, colour and contrast but not font family or
+  weight. Closing that means committing a font binary and a `FontLoader` — worth
+  doing once this project picks a brand font. `core_ui/test/golden_test.dart`
+  spells out exactly what each snapshot does and does not prove.
+- **`app` is the weakest package at 64% coverage** — it is the composition root,
+  and what covers it is `app_smoke_test.dart` booting the real app rather than
+  unit tests of glue. The per-package floor in `tools/coverage_summary.dart` sits
+  at 60 for that reason, with the next step written down.

@@ -34,7 +34,8 @@ DEFINES = --dart-define-from-file=env_config/$(FLAVOR)/dart_defines.json
 
 .DEFAULT_GOAL := help
 .PHONY: help setup sdk env get hooks codegen codegen-watch l10n analyze fmt fmt-check test test-coverage \
-        check-deps check-artifacts check-props ci clean rebuild dev stg prod apk aab ipa rename doctor
+        integration golden golden-update check-deps check-artifacts check-props ci clean rebuild dev stg prod apk aab ipa \
+        ios-nosign rename doctor
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -96,7 +97,7 @@ analyze: ## Static analysis across the workspace
 # exclude list, so pointing it at whole directories also reformats generated
 # files — and since the generators emit their own style, fmt-check would then
 # fail on a clean checkout every time codegen runs.
-DART_SOURCES = $(shell find $(addsuffix /lib,$(PACKAGES)) $(addsuffix /test,$(PACKAGES)) tools \
+DART_SOURCES = $(shell find $(addsuffix /lib,$(PACKAGES)) $(addsuffix /test,$(PACKAGES)) app/integration_test tools \
 	-name '*.dart' ! -name '*.g.dart' ! -name '*.config.dart' ! -name '*.module.dart' \
 	! -path '*/generated/*' 2>/dev/null)
 
@@ -110,10 +111,63 @@ test: ## Run tests — all packages, or one with PKG=core/core_storage
 	@# PKG takes a path, the same string TEST_PACKAGES uses, so a name copied out
 	@# of a failing run can be pasted straight back in. Extra arguments go through
 	@# ARGS, e.g. `make test PKG=app ARGS="--name 'boots'"`.
+	@# `--exclude-tags golden` because a golden failure depends on the renderer,
+	@# not on the change: a developer whose machine disagrees with CI would be
+	@# blocked by a diff they cannot act on. `make golden` runs them explicitly
+	@# and CI runs them as their own step.
 	@for pkg in $(or $(PKG),$(TEST_PACKAGES)); do \
 		echo "→ test $$pkg"; \
-		(cd $$pkg && $(FLUTTER) test $(ARGS)) || exit 1; \
+		(cd $$pkg && $(FLUTTER) test --exclude-tags golden $(ARGS)) || exit 1; \
 	done
+
+# Golden tests live only in core_ui and are tagged `golden`, so they can be run
+# and skipped as a set. `make test` excludes them: they are the one kind of test
+# whose result depends on the renderer, and a developer on a machine that
+# disagrees with CI should not be blocked by a diff they cannot act on. CI runs
+# them as their own step, where the SDK is the one pinned in .fvmrc.
+GOLDEN_PACKAGE := core/core_ui
+
+golden: ## Verify the design-system golden snapshots
+	cd $(GOLDEN_PACKAGE) && $(FLUTTER) test --tags golden
+
+golden-update: ## Rewrite the golden snapshots — then REVIEW THE IMAGES
+	@# Regenerating is the easy half. A golden nobody opened is worse than no
+	@# golden: it launders the regression into the baseline and every later diff
+	@# is measured against the broken picture.
+	cd $(GOLDEN_PACKAGE) && $(FLUTTER) test --tags golden --update-goldens
+	@echo ""
+	@echo "→ open the changed PNGs before committing:"
+	@echo "    git diff --stat -- '$(GOLDEN_PACKAGE)/test/goldens/*.png'"
+
+integration: ## Run integration tests on a booted device/emulator/simulator
+	@# Deliberately NOT part of `make ci`. These need a device, CI runners do not
+	@# have one, and a gate that cannot run everywhere is a gate people learn to
+	@# skip. `.github/workflows/integration.yml` boots an emulator for them on a
+	@# schedule and on demand. What they buy over `app/test/app_smoke_test.dart`
+	@# is the real plugin channels — that test mocks secure storage, preferences
+	@# and connectivity, so every device-only failure is invisible to it.
+	@# `-d` is not optional, and the reason is specific: on any Mac, `macos` and
+	@# `chrome` are always connected devices, so `flutter test integration_test`
+	@# aborts with "More than one device connected" every single time. The first
+	@# version of this target omitted it and could never have run anywhere.
+	@#
+	@# The guard is by *platform*, not by device count, for the same reason: a
+	@# check for "is any device present" is satisfied by macOS and Chrome and so
+	@# never fires. Only android-* and ios can run these.
+	@#
+	@# Override with `make integration DEVICE=emulator-5554` when more than one
+	@# phone is attached.
+	@device="$(or $(DEVICE),$$($(FLUTTER) devices --machine \
+		| grep -B4 '"targetPlatform": "\(android\|ios\)' \
+		| grep '"id"' | head -1 | sed 's/.*: "\(.*\)",/\1/'))"; \
+	if [ -z "$$device" ]; then \
+		echo "✗ no android or ios device. Boot an emulator/simulator, or plug in a phone."; \
+		echo "  macOS and Chrome do not count — these tests exist to exercise mobile plugins."; \
+		$(FLUTTER) devices; \
+		exit 1; \
+	fi; \
+	echo "→ integration tests on $$device"; \
+	cd app && $(FLUTTER) test integration_test -d "$$device" $(DEFINES) $(ARGS)
 
 test-coverage: ## Run tests with coverage and print a summary
 	@for pkg in $(TEST_PACKAGES); do \
@@ -134,7 +188,7 @@ check-deps: ## Fail if any package imports across a forbidden layer boundary
 ARTIFACT_PATTERN := ^\.dart_tool/|^\.fvm/|(^|/)build/|(^|/)coverage/|\.g\.dart$$|\.config\.dart$$|\.module\.dart$$|l10n/generated/|env_config/.*/dart_defines\.json$$
 
 check-props: ## Fail if an Equatable class omits a field from props
-	@# Rule 13's teeth. A field outside `props` is invisible to `==`, so
+	@# Rule 14's teeth. A field outside `props` is invisible to `==`, so
 	@# BlocSelector and buildWhen never rebuild for it — the state is right, the
 	@# widget is right, and the screen simply does not update. Deliberate
 	@# exclusions live in `allowedOmissions` with their reason.
@@ -152,7 +206,7 @@ check-artifacts: ## Fail if build output, generated code or env files are tracke
 	fi
 	@echo "✓ no build output, generated code or env files tracked"
 
-ci: get l10n codegen fmt-check analyze test check-deps check-props check-artifacts ## The full quality gate
+ci: get l10n codegen fmt-check analyze test golden check-deps check-props check-artifacts ## The full quality gate
 	@echo "✓ CI checks passed."
 
 clean: ## Remove build outputs, generated code and the build_runner caches
@@ -192,6 +246,14 @@ aab: ## Play Store bundle — FLAVOR=prod
 
 ipa: ## iOS archive — FLAVOR=prod (macOS only)
 	cd app && $(FLUTTER) build ipa --release --obfuscate --split-debug-info=build/debug-info $(DEFINES)
+
+ios-nosign: ## Compile iOS without signing — the release-build check CI can run
+	@# A signing identity is a per-project secret this base does not ship, so
+	@# `ipa` cannot run in CI on a fresh clone. This target still catches what
+	@# actually breaks an iOS release: a plugin with no iOS implementation, a
+	@# Podfile that will not resolve, a deployment target below what a
+	@# dependency needs. None of those show up in `flutter test`.
+	cd app && $(FLUTTER) build ios --release --no-codesign $(DEFINES)
 
 # --- Scaffolding -------------------------------------------------------------
 

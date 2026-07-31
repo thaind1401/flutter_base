@@ -2,20 +2,12 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'support/host.dart';
+
 void main() {
-  Widget host({required bool value, ValueChanged<bool>? onChanged, String? subtitle, bool enabled = true}) =>
-      MaterialApp(
-        theme: AppTheme.light(),
-        home: Scaffold(
-          body: AppSwitchTile(
-            title: 'Notifications',
-            subtitle: subtitle,
-            value: value,
-            onChanged: onChanged,
-            enabled: enabled,
-          ),
-        ),
-      );
+  Widget host({required bool value, ValueChanged<bool>? onChanged, String? subtitle, bool enabled = true}) => testHost(
+    AppSwitchTile(title: 'Notifications', subtitle: subtitle, value: value, onChanged: onChanged, enabled: enabled),
+  );
 
   testWidgets('renders the title, subtitle and current value', (tester) async {
     await tester.pumpWidget(host(value: true, subtitle: 'Email me about updates'));

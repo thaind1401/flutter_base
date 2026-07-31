@@ -1,3 +1,4 @@
+import 'package:core_ui/src/l10n/generated/core_l10n.dart';
 import 'package:core_ui/src/theme/theme_context_x.dart';
 import 'package:flutter/material.dart';
 
@@ -74,11 +75,26 @@ class AppButton extends StatelessWidget {
       AppButtonVariant.danger => (colors.danger, colors.onStatus, null),
     };
 
+    // A loading button has no label in the tree — the `Text` below was swapped
+    // for a spinner — so an assistive technology announces "button, dimmed"
+    // with no name at all, exactly when the user most needs to know that their
+    // tap was accepted and is running. The name is re-attached to the spinner,
+    // with the running state in it, because "dimmed" alone reads as unavailable
+    // and tells the user to give up rather than to wait.
+    //
+    // It goes *inside* the button rather than around it. `FilledButton` already
+    // publishes a node with `button: true` and takes its name from whatever its
+    // child contributes; wrapping the whole button in a second
+    // `Semantics(button: true)` produced two nested button nodes with the outer
+    // one unnamed, which is what `accessibility_test.dart` caught.
     final child = isLoading
-        ? SizedBox(
-            width: dimens.iconSm,
-            height: dimens.iconSm,
-            child: CircularProgressIndicator(strokeWidth: 2, color: foreground),
+        ? Semantics(
+            label: CoreL10n.of(context).a11yButtonBusy(label),
+            child: SizedBox(
+              width: dimens.iconSm,
+              height: dimens.iconSm,
+              child: CircularProgressIndicator(strokeWidth: 2, color: foreground),
+            ),
           )
         : Row(
             mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,

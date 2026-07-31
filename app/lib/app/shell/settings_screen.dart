@@ -1,16 +1,18 @@
+import 'dart:async';
+
 import 'package:app/app/session/session_cubit.dart';
+import 'package:app/app/theme/theme_mode_controller.dart';
 import 'package:core_arch/core_arch.dart';
 import 'package:core_kit/core_kit.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 
 class SettingsScreen extends BaseScreen {
-  const SettingsScreen({super.key, required this.themeMode, required this.onThemeModeChanged});
+  const SettingsScreen({super.key, required this.themeMode});
 
   static const RouteSpec spec = RouteSpec(name: 'settings', path: '/settings');
 
-  final ValueNotifier<ThemeMode> themeMode;
-  final ValueChanged<ThemeMode> onThemeModeChanged;
+  final ThemeModeController themeMode;
 
   @override
   String? title(BuildContext context) => 'Settings';
@@ -33,7 +35,10 @@ class SettingsScreen extends BaseScreen {
               ButtonSegment(value: ThemeMode.dark, label: Text('Dark')),
             ],
             selected: {mode},
-            onSelectionChanged: (selection) => onThemeModeChanged(selection.first),
+            // Fire-and-forget: `select` applies the mode synchronously and only
+            // the persistence is awaited, so there is nothing for the UI to
+            // wait on and nothing it could do about a failed write.
+            onSelectionChanged: (selection) => unawaited(themeMode.select(selection.first)),
           ),
         ),
         SizedBox(height: context.dimens.space32),

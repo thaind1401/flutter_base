@@ -2,13 +2,15 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'support/host.dart';
+
 /// Page chrome exists to stop every screen re-deriving the same defaults. The
 /// two worth guarding are the ones a screen author forgets: tapping outside a
 /// field dismisses the keyboard, and the bottom action bar clears the home
 /// indicator instead of sitting under it.
 
 void main() {
-  Widget host(Widget child) => MaterialApp(theme: AppTheme.light(), home: child);
+  Widget host(Widget child) => testHost(child, scaffold: false);
 
   testWidgets('renders its body', (tester) async {
     await tester.pumpWidget(host(const AppScaffold(body: Text('Body'))));
