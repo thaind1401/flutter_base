@@ -11,10 +11,14 @@ final class _FakeMiniApp implements MiniApp {
     this.entryPointPlacements = const {MiniAppPlacement.workspace},
     this.rootRouteCount = 1,
     this.shellRouteCount = 1,
+    this.localizationsDelegates = const [],
   });
 
   @override
   final String id;
+
+  @override
+  final List<LocalizationsDelegate<Object?>> localizationsDelegates;
 
   final Set<MiniAppPlacement> entryPointPlacements;
   final int rootRouteCount;
@@ -53,6 +57,24 @@ final class _FakeMiniApp implements MiniApp {
       onOpen: (_) {},
     ),
   ];
+}
+
+/// Stands in for a mini-app's generated localizations delegate. Only its
+/// identity matters here — the registry's job is to carry it through, not to
+/// resolve anything from it.
+final class _StubDelegate extends LocalizationsDelegate<Object> {
+  const _StubDelegate(this.name);
+
+  final String name;
+
+  @override
+  bool isSupported(Locale locale) => true;
+
+  @override
+  Future<Object> load(Locale locale) async => Object();
+
+  @override
+  bool shouldReload(_StubDelegate old) => false;
 }
 
 final class _StubHost implements MiniAppHost {
@@ -132,6 +154,25 @@ void main() {
       // host's bottom bar instead of over it — a layout bug that only shows up
       // when the mini-app is opened.
       expect(miniApp.receivedRootKey, same(key));
+    });
+
+    test('collects the localization delegates of every mini-app', () {
+      // A mini-app ships its own ARB, and the host cannot name a class from a
+      // package it does not import — so the registry is the only path from a
+      // mini-app's delegate into `MaterialApp`. Drop one here and that
+      // mini-app's screens throw on `of(context)` the first time they open,
+      // with nothing failing at build time.
+      final first = _FakeMiniApp('first', localizationsDelegates: const [_StubDelegate('first')]);
+      final second = _FakeMiniApp('second', localizationsDelegates: const [_StubDelegate('second')]);
+
+      final delegates = MiniAppRegistry([first, second]).localizationsDelegates;
+
+      expect(delegates, hasLength(2));
+      expect(delegates.whereType<_StubDelegate>().map((delegate) => delegate.name), ['first', 'second']);
+    });
+
+    test('contributes no delegates when no mini-app has copy of its own', () {
+      expect(MiniAppRegistry([_FakeMiniApp('a')]).localizationsDelegates, isEmpty);
     });
 
     test('a duplicate id is rejected rather than silently shadowing', () {

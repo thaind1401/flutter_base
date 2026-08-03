@@ -29,12 +29,22 @@ CODEGEN_PACKAGES := core/core_storage core/core_network core/core_ui features/fe
 TEST_PACKAGES := core/core_kit core/core_storage core/core_network core/core_arch core/core_ui \
                  mini_apps/mini_app_contract features/feature_auth app
 
+# Packages that own an ARB and generate their own localizations. Checked against
+# the tree by `make check-l10n`: a package with an l10n.yaml that is missing here
+# never gets generated, and the barrel then exports a file nobody produced.
+#
+# Every package listed here must ship the *same* set of locales. A delegate is
+# asked `isSupported(locale)` and a "no" does not fall back to English — the type
+# is simply absent from the tree and `of(context)` throws. One missing .arb is a
+# crash in that language, so check-l10n treats a locale gap as a build failure.
+L10N_PACKAGES := core/core_ui features/feature_auth app
+
 FLAVOR ?= dev
 DEFINES = --dart-define-from-file=env_config/$(FLAVOR)/dart_defines.json
 
 .DEFAULT_GOAL := help
 .PHONY: help setup sdk env get hooks codegen codegen-watch l10n analyze fmt fmt-check test test-coverage \
-        integration golden golden-update check-deps check-artifacts check-props ci clean rebuild dev stg prod apk aab ipa \
+        integration golden golden-update check-deps check-artifacts check-props check-l10n ci clean rebuild dev stg prod apk aab ipa \
         ios-nosign rename doctor
 
 help: ## Show this help
@@ -76,8 +86,11 @@ env: ## Create env_config/*/dart_defines.json from the tracked samples
 get: ## Resolve dependencies for the whole workspace
 	$(FLUTTER) pub get
 
-l10n: ## Regenerate core_ui localizations from the ARB files
-	cd core/core_ui && $(FLUTTER) gen-l10n
+l10n: ## Regenerate localizations from the ARB files in every l10n package
+	@for pkg in $(L10N_PACKAGES); do \
+		echo "→ l10n $$pkg"; \
+		(cd $$pkg && $(FLUTTER) gen-l10n) || exit 1; \
+	done
 
 codegen: ## Run build_runner in every package that needs it
 	@for pkg in $(CODEGEN_PACKAGES); do \
@@ -194,6 +207,14 @@ check-props: ## Fail if an Equatable class omits a field from props
 	@# exclusions live in `allowedOmissions` with their reason.
 	@$(DART) run tools/check_equatable_props.dart
 
+check-l10n: ## Fail if the l10n packages disagree on locales, keys or delegates
+	@# The three ways per-package localization breaks silently: a package with an
+	@# ARB missing from L10N_PACKAGES (generated for nobody), a package short one
+	@# locale (a crash in that language, not a fallback), and a generated class
+	@# whose delegate the host never registered (a crash on first open). None of
+	@# the three is a compile error. ADR-0011.
+	@$(DART) run tools/check_l10n.dart
+
 check-artifacts: ## Fail if build output, generated code or env files are tracked by git
 	@tracked=$$(git ls-files | grep -E '$(ARTIFACT_PATTERN)' || true); \
 	if [ -n "$$tracked" ]; then \
@@ -206,7 +227,7 @@ check-artifacts: ## Fail if build output, generated code or env files are tracke
 	fi
 	@echo "✓ no build output, generated code or env files tracked"
 
-ci: get l10n codegen fmt-check analyze test golden check-deps check-props check-artifacts ## The full quality gate
+ci: get l10n codegen fmt-check analyze test golden check-deps check-props check-l10n check-artifacts ## The full quality gate
 	@echo "✓ CI checks passed."
 
 clean: ## Remove build outputs, generated code and the build_runner caches

@@ -3,6 +3,7 @@ import 'package:core_arch/core_arch.dart';
 // is what makes the slice explicit, which is the whole point of BlocSelector.
 import 'package:core_kit/core_kit.dart';
 import 'package:core_ui/core_ui.dart';
+import 'package:feature_auth/src/l10n/l10n_context_x.dart';
 import 'package:feature_auth/src/presentation/login/login_bloc.dart';
 import 'package:feature_auth/src/presentation/login/login_state.dart';
 import 'package:flutter/material.dart';
@@ -60,9 +61,12 @@ class _LoginForm extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(height: context.dimens.space48),
-          Text('Welcome back', style: context.textStyles.titleLg),
+          Text(context.authL10n.loginTitle, style: context.textStyles.titleLg),
           SizedBox(height: context.dimens.space4),
-          Text('Sign in to continue', style: context.textStyles.bodyMd.copyWith(color: context.colors.textSecondary)),
+          Text(
+            context.authL10n.loginSubtitle,
+            style: context.textStyles.bodyMd.copyWith(color: context.colors.textSecondary),
+          ),
           SizedBox(height: context.dimens.space32),
           const _EmailField(),
           SizedBox(height: context.dimens.space16),
@@ -88,8 +92,8 @@ class _EmailField extends StatelessWidget {
     return BlocSelector<LoginBloc, LoginState, Email>(
       selector: (state) => state.email,
       builder: (context, email) => AppTextField(
-        label: 'Email',
-        hint: 'you@example.com',
+        label: context.authL10n.loginEmailLabel,
+        hint: context.authL10n.loginEmailHint,
         keyboardType: TextInputType.emailAddress,
         textInputAction: TextInputAction.next,
         autofillHints: const [AutofillHints.username, AutofillHints.email],
@@ -110,7 +114,7 @@ class _PasswordField extends StatelessWidget {
     return BlocSelector<LoginBloc, LoginState, Password>(
       selector: (state) => state.password,
       builder: (context, password) => AppTextField(
-        label: 'Password',
+        label: context.authL10n.loginPasswordLabel,
         obscureText: true,
         textInputAction: TextInputAction.done,
         autofillHints: const [AutofillHints.password],
@@ -135,7 +139,7 @@ class _SubmitButton extends StatelessWidget {
     return BlocSelector<LoginBloc, LoginState, ({bool canSubmit, bool isSubmitting})>(
       selector: (state) => (canSubmit: state.canSubmit, isSubmitting: state.isSubmitting),
       builder: (context, submit) => AppButton(
-        label: 'Sign in',
+        label: context.authL10n.loginSubmit,
         isLoading: submit.isSubmitting,
         onPressed: submit.canSubmit ? () => context.read<LoginBloc>().add(const LoginSubmitted()) : null,
       ),

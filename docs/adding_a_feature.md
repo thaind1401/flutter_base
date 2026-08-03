@@ -30,8 +30,8 @@ Register it in three places:
 
 1. `pubspec.yaml` at the repo root → `workspace:` (as `features/feature_orders`)
 2. `tools/check_dependencies.dart` → `allowedDependencies`
-3. `Makefile` → `PACKAGES`, plus `CODEGEN_PACKAGES` / `TEST_PACKAGES` if it
-   needs them
+3. `Makefile` → `PACKAGES`, plus `CODEGEN_PACKAGES` / `TEST_PACKAGES` /
+   `L10N_PACKAGES` if it needs them
 
 Steps 1 and 2 are cross-checked: `make check-deps` fails if a package appears in
 one and not the other. With a flat root a new directory is easy to add and easy
@@ -318,20 +318,49 @@ final class OrdersRouteModule implements RouteModule {
 `shellRoutes` for screens inside the bottom navigation; `rootRoutes` for
 full-screen ones. Both are required so adding a feature forces the decision.
 
-## 6. Barrel
+## 6. Localization
+
+Your feature owns its copy. Add `l10n.yaml`, an `arb-dir` under
+`lib/src/l10n/arb`, and one ARB **per locale the app supports** — copy
+`features/feature_auth/l10n.yaml` and change three names. Then wire the four
+things a new l10n package needs, none of which the compiler will remind you
+about:
+
+1. `flutter_localizations` + `intl` in `pubspec.yaml`, and `flutter: generate: true`;
+2. the package path in **`L10N_PACKAGES`** in the `Makefile`;
+3. the generated class exported from your barrel;
+4. its **delegate registered in `app/lib/app/l10n/app_localizations.dart`**.
+
+Read strings through your own extension — `context.yourFeatureL10n.someKey`.
+Shared chrome ("Cancel", "Try again") comes from `context.coreL10n` instead of
+being duplicated into your ARB; borrowing downward like that is allowed and is
+already policed by `make check-deps`, because it needs an import of
+`package:core_ui`.
+
+The reason all four steps matter: `Localizations.of<T>` resolves **by type at
+runtime**, and a type that is not in the tree *throws*. A missing delegate, or an
+ARB short one locale, is a crash on your screens in that language — not an
+English fallback, and not a compile error. `make check-l10n` fails on each of
+these, and `app/test/localization_test.dart` boots the app under `vi` to prove it
+in a real tree. Goldens cannot: `flutter test` ships no font, so translated text
+renders as the same boxes.
+
+See ADR-0011.
+
+## 7. Barrel
 
 Export the minimum: entities, repository interface, use cases the host needs,
 and the route module. **Not** the repository implementation, the DTOs, or the
 API class — those are private to the feature and exporting them is how a
 boundary quietly dissolves.
 
-## 7. Tests
+## 8. Tests
 
 At minimum: the bloc with a fake repository, and the DTO → entity mapping for
 any field that is nullable, renamed, or format-ambiguous on the wire.
 
 ```bash
-make codegen && make analyze && make test && make check-deps
+make codegen && make l10n && make analyze && make test && make check-deps && make check-l10n
 ```
 
 ## Checklist
@@ -350,5 +379,7 @@ make codegen && make analyze && make test && make check-deps
 - [ ] State extends `Equatable`, `props` lists every field
 - [ ] No literal colours or spacings in widgets
 - [ ] Barrel exports the minimum
+- [ ] No user-visible string is a literal; ARB shipped for every supported locale
+- [ ] Package in `L10N_PACKAGES`, delegate in `AppLocalizationsSetup` (ADR-0011)
 - [ ] No import of another `feature_*` package
 - [ ] `make ci` green

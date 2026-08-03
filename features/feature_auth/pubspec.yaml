@@ -15,6 +15,11 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
+  # This package ships its own ARB and its own generated AuthL10n (ADR-0011),
+  # so it needs the localization machinery directly rather than through core_ui.
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
   core_kit: ^1.0.0
   core_arch: ^1.0.0
   core_ui: ^1.0.0
@@ -35,3 +40,10 @@ dev_dependencies:
   injectable_generator: ^3.0.2
   json_serializable: ^6.14.0
   retrofit_generator: ^10.2.8
+
+flutter:
+  # Required for `flutter gen-l10n` to run in this package. Without it the tool
+  # reports no error and simply produces nothing, which then surfaces as the
+  # barrel exporting a file that does not exist.
+  generate: true
+

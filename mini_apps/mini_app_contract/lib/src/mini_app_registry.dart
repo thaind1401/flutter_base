@@ -42,6 +42,16 @@ final class MiniAppRegistry implements RouteModule {
     for (final miniApp in _miniApps) ...miniApp.shellRoutes(rootNavigatorKey: rootNavigatorKey),
   ];
 
+  /// Every installed mini-app's localization delegates, flattened.
+  ///
+  /// The host appends these to its own list. It has to go through the registry
+  /// rather than being written into `AppLocalizationsSetup`, because the host
+  /// names mini-app *packages* in one line of bootstrap and knows nothing about
+  /// the classes inside them — which is the whole point of the contract.
+  List<LocalizationsDelegate<Object?>> get localizationsDelegates => [
+    for (final miniApp in _miniApps) ...miniApp.localizationsDelegates,
+  ];
+
   /// Entry points for one placement, in registration order.
   List<MiniAppEntryPoint> entryPointsFor(BuildContext context, MiniAppPlacement placement) => [
     for (final miniApp in _miniApps) ...miniApp.entryPoints(context).where((entry) => entry.appearsIn(placement)),

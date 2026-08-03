@@ -1,0 +1,11 @@
+{
+  "@@locale": "en",
+
+  "loginTitle": "Welcome back",
+  "loginSubtitle": "Sign in to continue",
+
+  "loginEmailLabel": "Email",
+  "loginEmailHint": "you@example.com",
+  "loginPasswordLabel": "Password",
+  "loginSubmit": "Sign in"
+}

@@ -20,7 +20,7 @@ make get          # resolve the workspace
 make hooks        # point git at .githooks/ (pre-push: fmt-check + analyze)
 make codegen      # build_runner in every package that needs it
 make codegen-watch PKG=app
-make l10n         # regenerate core_ui localizations from ARB
+make l10n         # regenerate localizations from ARB, in every L10N_PACKAGES member
 make analyze
 make fmt          # apply
 make fmt-check    # verify — this is what CI runs
@@ -34,6 +34,7 @@ make integration DEVICE=emulator-5554   # when more than one phone is attached
 make test-coverage # per-package floor + workspace threshold
 make check-deps   # architecture boundaries + the Makefile package lists
 make check-props  # fail if an Equatable class omits a field from props
+make check-l10n   # fail if the l10n packages disagree on locales, keys or delegates
 make check-artifacts # fail if build output or generated code is tracked by git
 make ci           # the full gate
 make dev|stg|prod
@@ -146,7 +147,8 @@ Dependencies flow downward only and are **enforced** by
     the name (`"Save, busy"`) *inside* the button; `AppTextField`'s reveal
     toggle carries a `tooltip`; `AppSwitchTile` is one `Semantics` node for the
     whole row rather than an unnamed region plus a switch. Copy those shapes,
-    and add the string to `core_en.arb`/`core_vi.arb` rather than hardcoding it.
+    and add the string to the ARB of the package that owns it (rule 15) rather
+    than hardcoding it.
     `core_ui/test/accessibility_test.dart` asserts each one and runs Flutter's
     `androidTapTargetGuideline`, `iOSTapTargetGuideline`, `textContrastGuideline`
     and `labeledTapTargetGuideline` over a form in both themes.
@@ -159,6 +161,33 @@ Dependencies flow downward only and are **enforced** by
     deliberately outside `props` goes in `allowedOmissions` with its reason,
     like `Failure.stackTrace`.
 
+15. **No user-visible string is a literal, and it lives in the package that
+    owns it.** Each package with copy has its own ARB and its own generated
+    class — `context.coreL10n`, `context.authL10n`, `context.appL10n`. A feature
+    may read a core package's copy (`context.coreL10n.commonCancel`); the
+    reverse cannot compile, because it needs an import `make check-deps` already
+    forbids. **Localization inherits the layer graph; it does not get one of its
+    own.** ADR-0011.
+
+    The edge worth memorising: `Localizations.of<T>` resolves **by type at
+    runtime**, and a type that is not in the tree *throws* — there is no
+    fallback to English. So a package missing one `.arb`, or a delegate the host
+    forgot to register in `AppLocalizationsSetup`, is a crash in one language on
+    one screen, with `analyze`, `test` and `golden` all green. Goldens cannot
+    help: `flutter test` ships no font, so a Vietnamese screen and an English one
+    render identically.
+
+    Three things hold this up, and a new l10n package needs all three: an entry
+    in `L10N_PACKAGES` in the `Makefile`, a delegate in `AppLocalizationsSetup`,
+    and the **same locale set every other l10n package ships**. `make check-l10n`
+    fails on any of them, plus a key present in the template and missing from a
+    translation. `app/test/localization_test.dart` boots the real app under `vi`
+    and proves it in a real tree.
+
+    A mini-app contributes its delegates through
+    `MiniApp.localizationsDelegates`; the host collects them from the registry,
+    because it names mini-app packages and never the classes inside them.
+
 ## Code generation
 
 Run `make codegen` after changing:
@@ -170,8 +199,8 @@ Run `make codegen` after changing:
 ## Before saying a change is done
 
 `make fmt` + `make analyze` + `make test` + `make golden` + `make check-deps` +
-`make check-props` + `make check-artifacts` — or just `make ci`. A change is not done until that is
-green.
+`make check-props` + `make check-l10n` + `make check-artifacts` — or just
+`make ci`. A change is not done until that is green.
 
 `make integration` is **not** in that gate and is not expected to be: it needs a
 booted device, CI runners have none, and a gate that cannot run everywhere is a

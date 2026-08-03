@@ -16,3 +16,4 @@ way to tell a considered choice from an accident, and re-litigates it.
 | [0008](0008-rebuild-scope.md) | A screen is a tree of small widgets, each selecting one slice of state | Accepted |
 | [0009](0009-screen-bases.md) | Every screen extends one of three bases | Accepted |
 | [0010](0010-accessibility-and-goldens.md) | Accessible names and golden snapshots belong to the design system | Accepted |
+| [0011](0011-localization-per-package.md) | Localization lives in the package that owns the copy | Accepted |

@@ -35,9 +35,12 @@ void main() {
 
   Widget host({VoidCallback? onAuthenticated, LoginBloc? instance}) => MaterialApp(
     theme: AppTheme.light(),
-    // feature_auth does not depend on flutter_localizations, and does not need
-    // to: `MaterialApp` supplies DefaultMaterialLocalizations for `en` itself.
-    localizationsDelegates: const [CoreL10n.delegate],
+    // Both delegates, and not by accident. `LoginScreen` reads its own copy from
+    // AuthL10n; leave that delegate out and `of(context)` throws rather than
+    // falling back, which is the whole hazard ADR-0011 is about. The Material
+    // delegates are omitted because `MaterialApp` supplies
+    // DefaultMaterialLocalizations for `en` itself.
+    localizationsDelegates: const [CoreL10n.delegate, AuthL10n.delegate],
     supportedLocales: CoreL10n.supportedLocales,
     home: BlocProvider<LoginBloc>(
       create: (_) => instance ?? bloc(),
@@ -114,7 +117,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.light(),
-          localizationsDelegates: const [CoreL10n.delegate],
+          localizationsDelegates: const [CoreL10n.delegate, AuthL10n.delegate],
           supportedLocales: CoreL10n.supportedLocales,
           home: BlocProvider<LoginBloc>(
             create: (_) => bloc(),
@@ -256,7 +259,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp.router(
           theme: AppTheme.light(),
-          localizationsDelegates: const [CoreL10n.delegate],
+          localizationsDelegates: const [CoreL10n.delegate, AuthL10n.delegate],
           supportedLocales: CoreL10n.supportedLocales,
           routerConfig: router,
         ),

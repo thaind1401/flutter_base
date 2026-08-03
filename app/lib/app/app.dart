@@ -1,5 +1,6 @@
 import 'package:app/app/bootstrap.dart';
 import 'package:app/app/di/injection.dart';
+import 'package:app/app/l10n/app_localizations.dart';
 import 'package:app/app/router/app_router.dart';
 import 'package:app/app/session/session_cubit.dart';
 import 'package:core_arch/core_arch.dart';
@@ -7,7 +8,6 @@ import 'package:core_kit/core_kit.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:feature_auth/feature_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 
 /// The root widget.
 ///
@@ -57,13 +57,16 @@ class _AppState extends State<App> {
           themeMode: themeMode,
           theme: AppTheme.light(),
           darkTheme: AppTheme.dark(),
-          localizationsDelegates: const [
-            CoreL10n.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
+          // One list, plus whatever the installed mini-apps contribute. Spelling
+          // these out here is how a package's delegate gets forgotten: the app
+          // still compiles and only that package's screens crash, in only the
+          // languages it was short. `make check-l10n` holds the list to
+          // L10N_PACKAGES.
+          localizationsDelegates: [
+            ...AppLocalizationsSetup.delegates,
+            ...widget.bootstrap.registry.localizationsDelegates,
           ],
-          supportedLocales: CoreL10n.supportedLocales,
+          supportedLocales: AppLocalizationsSetup.supportedLocales,
           // Mounted above the router so the blocking loader survives navigation
           // and cannot be popped away with the screen that started it.
           builder: (context, child) => LoadingOverlayHost(

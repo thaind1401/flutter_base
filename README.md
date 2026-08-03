@@ -91,6 +91,8 @@ make golden       # design-system snapshots, light and dark
 make integration  # on a booted device/emulator — not part of `make ci`
 make ci           # the full gate — what CI runs
 make check-deps   # architecture boundaries
+make l10n         # regenerate localizations after editing an ARB
+make check-l10n   # locales, keys and delegates agree across l10n packages
 make help         # everything else
 ```
 

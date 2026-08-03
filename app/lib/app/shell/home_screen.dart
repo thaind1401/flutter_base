@@ -1,3 +1,4 @@
+import 'package:app/app/l10n/l10n_context_x.dart';
 import 'package:app/app/session/session_cubit.dart';
 import 'package:core_arch/core_arch.dart';
 import 'package:core_kit/core_kit.dart';
@@ -25,7 +26,7 @@ class HomeScreen extends BaseScreen {
   final MiniAppRegistry registry;
 
   @override
-  String? title(BuildContext context) => 'Home';
+  String? title(BuildContext context) => context.appL10n.homeTitle;
 
   @override
   bool get padded => true;
@@ -39,7 +40,7 @@ class HomeScreen extends BaseScreen {
         const _UserCard(),
         SizedBox(height: context.dimens.space24),
         if (entries.isNotEmpty) ...[
-          Text('Apps', style: context.textStyles.titleSm),
+          Text(context.appL10n.homeAppsSection, style: context.textStyles.titleSm),
           SizedBox(height: context.dimens.space12),
           for (final entry in entries) ...[_MiniAppTile(entry: entry), SizedBox(height: context.dimens.space8)],
         ],
@@ -77,9 +78,9 @@ class _UserCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(user?.displayName ?? 'Guest', style: context.textStyles.titleSm),
+                    Text(user?.displayName ?? context.appL10n.homeGuestName, style: context.textStyles.titleSm),
                     Text(
-                      user?.email ?? 'Not signed in',
+                      user?.email ?? context.appL10n.homeGuestSubtitle,
                       style: context.textStyles.bodySm.copyWith(color: context.colors.textSecondary),
                     ),
                   ],

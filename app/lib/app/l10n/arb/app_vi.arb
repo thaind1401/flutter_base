@@ -1,0 +1,23 @@
+{
+  "@@locale": "vi",
+
+  "tabHome": "Trang chủ",
+  "tabSettings": "Cài đặt",
+
+  "homeTitle": "Trang chủ",
+  "homeAppsSection": "Ứng dụng",
+  "homeGuestName": "Khách",
+  "homeGuestSubtitle": "Chưa đăng nhập",
+
+  "settingsTitle": "Cài đặt",
+  "settingsAppearance": "Giao diện",
+  "settingsThemeSystem": "Hệ thống",
+  "settingsThemeLight": "Sáng",
+  "settingsThemeDark": "Tối",
+
+  "settingsSignOut": "Đăng xuất",
+  "settingsSignOutConfirmTitle": "Đăng xuất?",
+  "settingsSignOutConfirmMessage": "Bạn sẽ cần đăng nhập lại để tiếp tục.",
+
+  "settingsEnvironment": "Môi trường: {name}"
+}

@@ -9,6 +9,7 @@ library core_ui;
 export 'di.module.dart' show CoreUiPackageModule;
 export 'src/l10n/failure_presenter.dart';
 export 'src/l10n/generated/core_l10n.dart';
+export 'src/l10n/l10n_context_x.dart';
 export 'src/overlays/app_feedback.dart';
 export 'src/overlays/connectivity_banner.dart';
 export 'src/overlays/loading_overlay.dart';

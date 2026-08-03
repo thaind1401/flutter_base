@@ -1,0 +1,27 @@
+{
+  "@@locale": "en",
+
+  "tabHome": "Home",
+  "tabSettings": "Settings",
+
+  "homeTitle": "Home",
+  "homeAppsSection": "Apps",
+  "homeGuestName": "Guest",
+  "homeGuestSubtitle": "Not signed in",
+
+  "settingsTitle": "Settings",
+  "settingsAppearance": "Appearance",
+  "settingsThemeSystem": "System",
+  "settingsThemeLight": "Light",
+  "settingsThemeDark": "Dark",
+
+  "settingsSignOut": "Sign out",
+  "settingsSignOutConfirmTitle": "Sign out?",
+  "settingsSignOutConfirmMessage": "You will need to sign in again to continue.",
+
+  "settingsEnvironment": "Environment: {name}",
+  "@settingsEnvironment": {
+    "description": "Debug banner naming the build flavor. Hidden in production.",
+    "placeholders": { "name": { "type": "String" } }
+  }
+}
