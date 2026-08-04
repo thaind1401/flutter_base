@@ -35,6 +35,38 @@ const double threshold = 85;
 /// change to this line.
 const double packageThreshold = 60;
 
+/// Minimum line coverage for any single **file**.
+///
+/// The package floor was not enough either, and the proof is on the record:
+/// `app` reported a healthy 67.9% while `settings_screen.dart` sat at *one
+/// covered line out of forty* — an entire screen, owning the sign-out
+/// confirmation and a banner that prints the backend URL, tested by nothing. A
+/// package average absorbs one untested file exactly the way a workspace average
+/// absorbs one untested package.
+///
+/// Every threshold here has now been added after something slipped past the
+/// previous one. That is the pattern to expect: a mean hides its worst member at
+/// whatever granularity you stop measuring.
+const double fileThreshold = 50;
+
+/// Files below this many measured lines are not held to [fileThreshold].
+///
+/// A four-line file at 50% is two lines, and reporting it teaches people to skim
+/// this output. The cut-off is deliberately low enough that no screen, bloc,
+/// repository or use case falls under it.
+const int fileMinimumLines = 10;
+
+/// Files allowed below [fileThreshold], with the reason.
+///
+/// Reserved for code that genuinely has **no caller yet** — a base class shipped
+/// for features this project has not written, a forwarding path that only a
+/// mini-app reaches. Not for code that is merely inconvenient to test: that is
+/// the case this check exists to surface.
+///
+/// Keyed by the path as lcov reports it, matched by suffix so the entry does not
+/// depend on where the report was generated from.
+const Map<String, String> fileExemptions = <String, String>{};
+
 /// Packages allowed below [packageThreshold], with the reason.
 ///
 /// Same intent as `packagesWithoutTests` in check_dependencies.dart: debt is
@@ -71,6 +103,7 @@ void main() {
   var totalFound = 0;
   var totalHit = 0;
   final perPackage = <String, ({int found, int hit})>{};
+  final perFile = <String, ({int found, int hit})>{};
   final missing = <String>[];
 
   for (final path in packages) {
@@ -83,15 +116,27 @@ void main() {
     var skipping = false;
     var found = 0;
     var hit = 0;
+    var currentFile = '';
 
     for (final line in report.readAsLinesSync()) {
       if (line.startsWith('SF:')) {
         skipping = excludedPaths.any((pattern) => pattern.hasMatch(line));
+        // Recorded relative to the package, so the report reads the same
+        // wherever it was produced.
+        currentFile = '$path/${line.substring(3)}';
         continue;
       }
       if (skipping) continue;
-      if (line.startsWith('LF:')) found += int.parse(line.substring(3));
-      if (line.startsWith('LH:')) hit += int.parse(line.substring(3));
+      if (line.startsWith('LF:')) {
+        final value = int.parse(line.substring(3));
+        found += value;
+        perFile[currentFile] = (found: value, hit: perFile[currentFile]?.hit ?? 0);
+      }
+      if (line.startsWith('LH:')) {
+        final value = int.parse(line.substring(3));
+        hit += value;
+        perFile[currentFile] = (found: perFile[currentFile]?.found ?? 0, hit: value);
+      }
     }
 
     perPackage[package] = (found: found, hit: hit);
@@ -140,6 +185,34 @@ void main() {
     failures.add(
       'the workspace is at ${total.toStringAsFixed(1)}%, below the ${threshold.toStringAsFixed(0)}% threshold',
     );
+  }
+
+  // Reported after the package numbers rather than instead of them: the package
+  // floor is what catches a whole area going untested, and this is what catches
+  // one file hiding inside a healthy area.
+  final lowFiles = <({String path, double percent, int found})>[];
+  for (final entry in perFile.entries) {
+    final stats = entry.value;
+    if (stats.found < fileMinimumLines) continue;
+    final percent = stats.hit / stats.found * 100;
+    final exemption = _exemptionFor(entry.key);
+
+    if (percent < fileThreshold && exemption == null) {
+      lowFiles.add((path: entry.key, percent: percent, found: stats.found));
+    }
+    if (percent >= fileThreshold && exemption != null) {
+      failures.add('${entry.key} is at ${percent.toStringAsFixed(1)}% and no longer needs its exemption — remove it');
+    }
+  }
+
+  if (lowFiles.isNotEmpty) {
+    lowFiles.sort((a, b) => a.percent.compareTo(b.percent));
+    for (final file in lowFiles) {
+      failures.add(
+        '${file.path} is at ${file.percent.toStringAsFixed(1)}% of ${file.found} lines, '
+        'below the ${fileThreshold.toStringAsFixed(0)}% per-file floor',
+      );
+    }
   }
 
   if (failures.isNotEmpty) {
@@ -198,3 +271,13 @@ List<String> _testPackagesFromMakefile() {
 }
 
 String _percent(int hit, int found) => found == 0 ? '   n/a' : '${(hit / found * 100).toStringAsFixed(1).padLeft(5)}%';
+
+/// Matched by suffix so an entry survives the report being generated from a
+/// different working directory, and so it can be written the way a reader would
+/// naturally refer to the file.
+String? _exemptionFor(String path) {
+  for (final entry in fileExemptions.entries) {
+    if (path.endsWith(entry.key)) return entry.value;
+  }
+  return null;
+}

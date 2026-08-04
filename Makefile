@@ -43,7 +43,7 @@ FLAVOR ?= dev
 DEFINES = --dart-define-from-file=env_config/$(FLAVOR)/dart_defines.json
 
 .DEFAULT_GOAL := help
-.PHONY: help setup sdk env get hooks codegen codegen-watch l10n analyze fmt fmt-check test test-coverage \
+.PHONY: help setup sdk env get hooks codegen codegen-watch l10n analyze fmt fmt-check test test-coverage check-flags \
         integration golden golden-update check-deps check-artifacts check-props check-l10n ci clean rebuild dev stg prod apk aab ipa \
         ios-nosign rename doctor
 
@@ -207,7 +207,16 @@ check-deps: ## Fail if any package imports across a forbidden layer boundary
 # git already follows does nothing. Each one also holds absolute `.pub-cache`
 # paths and a `date_created`, so they carry the committer's username and churn
 # on every `pub get`.
-ARTIFACT_PATTERN := ^\.dart_tool/|^\.fvm/|(^|/)build/|(^|/)coverage/|\.g\.dart$$|\.config\.dart$$|\.module\.dart$$|l10n/generated/|env_config/.*/dart_defines\.json$$|(^|/)\.flutter-plugins(-dependencies)?$$
+# `.dart_tool` and `.fvm` are `(^|/)`-anchored, not `^`-anchored. They used to be
+# the latter, which matched only the copies at the repository root — so three
+# `<package>/.dart_tool/flutter_build/dart_plugin_registrant.dart` files were
+# tracked while this check passed. In a workspace every package has its own
+# `.dart_tool`, and the root is the one that matters least.
+#
+# The content pass below is what found them. That is the division of labour:
+# this list is fast and precise for what is already known, and the header grep
+# is what notices the thing nobody thought to list.
+ARTIFACT_PATTERN := (^|/)\.dart_tool/|(^|/)\.fvm/|(^|/)build/|(^|/)coverage/|\.g\.dart$$|\.config\.dart$$|\.module\.dart$$|l10n/generated/|env_config/.*/dart_defines\.json$$|(^|/)\.flutter-plugins(-dependencies)?$$
 
 check-props: ## Fail if an Equatable class omits a field from props
 	@# Rule 14's teeth. A field outside `props` is invisible to `==`, so
@@ -224,6 +233,28 @@ check-l10n: ## Fail if the l10n packages disagree on locales, keys or delegates
 	@# the three is a compile error. ADR-0011.
 	@$(DART) run tools/check_l10n.dart
 
+# What a generated file says about itself, on its first line.
+#
+# The name check below is a denylist, and a denylist fails **open**: it catches
+# what it was taught and waves through everything else. Three
+# `.flutter-plugins-dependencies` files rode in that way while this target
+# reported success, because nothing had added them to ARTIFACT_PATTERN.
+#
+# Most Dart and Flutter generators stamp a header saying not to check the file
+# in. Grepping for that stamp catches the next such file without anyone
+# predicting its name — which is the only way this check gets ahead of the
+# problem rather than one incident behind it.
+GENERATED_MARKER := generated file|GENERATED CODE - DO NOT MODIFY|do not edit or check into version control|DO NOT EDIT
+
+check-flags: ## Fail if a config flag promises a feature nothing implements
+	@# `AppEnvironmentConfig.enableCertificatePinning` was true in production and
+	@# read by nothing, while two tests asserted its value — so it looked wired
+	@# and covered, and an auditor reading the config would have concluded that
+	@# production traffic was pinned. A `bool enableX` is a claim; this checks
+	@# something honours it. Deliberate exceptions live in `allowedUnread` with
+	@# their reason.
+	@$(DART) run tools/check_dead_flags.dart
+
 check-artifacts: ## Fail if build output, generated code or env files are tracked by git
 	@tracked=$$(git ls-files | grep -E '$(ARTIFACT_PATTERN)' || true); \
 	if [ -n "$$tracked" ]; then \
@@ -234,9 +265,26 @@ check-artifacts: ## Fail if build output, generated code or env files are tracke
 		echo "    git rm -r --cached <path>"; \
 		exit 1; \
 	fi
-	@echo "✓ no build output, generated code or env files tracked"
+	@# Second pass, by content rather than by name. Only the first two lines are
+	@# read, so a source file merely discussing generated code is not a hit, and
+	@# this stays fast over the whole index. Files the name pass already covers
+	@# are excluded so a real offender is reported once.
+	@selfdeclared=$$(git ls-files | grep -vE '$(ARTIFACT_PATTERN)' | while read -r f; do \
+		[ -f "$$f" ] || continue; \
+		head -n 2 "$$f" 2>/dev/null | grep -qiE '$(GENERATED_MARKER)' && echo "$$f"; \
+	done); \
+	if [ -n "$$selfdeclared" ]; then \
+		echo "✗ these tracked files declare themselves generated:"; \
+		echo "$$selfdeclared" | sed 's/^/    /'; \
+		echo ""; \
+		echo "  Untrack them, then add the pattern to ARTIFACT_PATTERN so the"; \
+		echo "  name pass catches the next one before it is committed:"; \
+		echo "    git rm -r --cached <path>"; \
+		exit 1; \
+	fi
+	@echo "✓ no build output, generated code or env files tracked, by name or by header"
 
-ci: get l10n codegen fmt-check analyze test golden check-deps check-props check-l10n check-artifacts ## The full quality gate
+ci: get l10n codegen fmt-check analyze test golden check-deps check-props check-l10n check-flags check-artifacts ## The full quality gate
 	@echo "✓ CI checks passed."
 
 clean: ## Remove build outputs, generated code and the build_runner caches

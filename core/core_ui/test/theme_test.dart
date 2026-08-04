@@ -126,6 +126,64 @@ void main() {
       expect(_luminance(AppColors.dark().surface), greaterThan(_luminance(AppColors.dark().background)));
     });
   });
+
+  group('copyWith preserves the fields it is not asked to change', () {
+    // The bug this exists for: `AppDimens.copyWith` named three parameters and
+    // passed only those to the constructor, so the other fifteen fell back to
+    // their defaults. A project that had tuned its spacing scale lost the tuning
+    // the moment anything called `copyWith`, and the whole method was at zero
+    // coverage so nothing said a word.
+    //
+    // Asserted for all three extensions rather than the one that broke, because
+    // the next token class added here will be copied from whichever of these the
+    // author happens to open.
+
+    test('AppDimens keeps every unnamed field', () {
+      const tuned = AppDimens(space16: 20, radiusLg: 28, iconMd: 30, borderWidth: 2);
+
+      final copy = tuned.copyWith(pagePadding: 24);
+
+      expect(copy.pagePadding, 24, reason: 'the requested change did not apply');
+      expect(copy.space16, 20);
+      expect(copy.radiusLg, 28);
+      expect(copy.iconMd, 30);
+      expect(copy.borderWidth, 2);
+    });
+
+    test('AppColors keeps every unnamed field', () {
+      final tuned = AppTheme.light().extension<AppColors>()!;
+
+      final copy = tuned.copyWith(brand: const Color(0xFF00FF00));
+
+      expect(copy.brand, const Color(0xFF00FF00));
+      expect(copy.textPrimary, tuned.textPrimary);
+      expect(copy.danger, tuned.danger);
+      expect(copy.skeleton, tuned.skeleton);
+    });
+
+    test('AppTypography keeps every unnamed field', () {
+      final tuned = AppTheme.light().extension<AppTypography>()!;
+
+      final copy = tuned.copyWith(bodyMd: const TextStyle(fontSize: 99));
+
+      expect(copy.bodyMd.fontSize, 99);
+      expect(copy.titleLg, tuned.titleLg);
+      expect(copy.caption, tuned.caption);
+    });
+  });
+
+  group('dimens expose the derived values widgets actually use', () {
+    test('radius getters follow their scalar', () {
+      const dimens = AppDimens(radiusSm: 4, radiusPill: 500);
+
+      expect(dimens.radiusSmAll, BorderRadius.circular(4));
+      expect(dimens.radiusPillAll, BorderRadius.circular(500));
+    });
+
+    test('page insets follow pagePadding', () {
+      expect(const AppDimens(pagePadding: 20).pageInsets, const EdgeInsets.all(20));
+    });
+  });
 }
 
 /// WCAG 2.1 relative luminance.

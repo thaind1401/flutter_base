@@ -66,11 +66,56 @@ final class AppDimens extends ThemeExtension<AppDimens> {
 
   BorderRadius get radiusPillAll => BorderRadius.circular(radiusPill);
 
+  /// Every field, forwarded.
+  ///
+  /// It used to name three and pass only those to the constructor, so the other
+  /// fifteen silently fell back to their **defaults**: a project that had tuned
+  /// `space16` lost that tuning the moment anything called
+  /// `copyWith(pagePadding: …)`. Nothing caught it because the whole method sat
+  /// at zero coverage, and `AppColors` and `AppTypography` — which both forward
+  /// correctly — made the pattern look established.
+  ///
+  /// A partial `copyWith` on a `ThemeExtension` is always this bug. If a field
+  /// is not worth a parameter, it still has to be passed through.
   @override
-  AppDimens copyWith({double? pagePadding, double? controlHeight, double? radiusMd}) => AppDimens(
-    pagePadding: pagePadding ?? this.pagePadding,
-    controlHeight: controlHeight ?? this.controlHeight,
+  AppDimens copyWith({
+    double? space2,
+    double? space4,
+    double? space8,
+    double? space12,
+    double? space16,
+    double? space24,
+    double? space32,
+    double? space48,
+    double? radiusSm,
+    double? radiusMd,
+    double? radiusLg,
+    double? radiusPill,
+    double? borderWidth,
+    double? iconSm,
+    double? iconMd,
+    double? iconLg,
+    double? controlHeight,
+    double? pagePadding,
+  }) => AppDimens(
+    space2: space2 ?? this.space2,
+    space4: space4 ?? this.space4,
+    space8: space8 ?? this.space8,
+    space12: space12 ?? this.space12,
+    space16: space16 ?? this.space16,
+    space24: space24 ?? this.space24,
+    space32: space32 ?? this.space32,
+    space48: space48 ?? this.space48,
+    radiusSm: radiusSm ?? this.radiusSm,
     radiusMd: radiusMd ?? this.radiusMd,
+    radiusLg: radiusLg ?? this.radiusLg,
+    radiusPill: radiusPill ?? this.radiusPill,
+    borderWidth: borderWidth ?? this.borderWidth,
+    iconSm: iconSm ?? this.iconSm,
+    iconMd: iconMd ?? this.iconMd,
+    iconLg: iconLg ?? this.iconLg,
+    controlHeight: controlHeight ?? this.controlHeight,
+    pagePadding: pagePadding ?? this.pagePadding,
   );
 
   /// Dimensions do not animate between themes; snapping avoids a layout that

@@ -35,6 +35,7 @@ make test-coverage # per-package floor + workspace threshold
 make check-deps   # architecture boundaries + the Makefile package lists
 make check-props  # fail if an Equatable class omits a field from props
 make check-l10n   # fail if the l10n packages disagree on locales, keys or delegates
+make check-flags  # fail if a *Config bool promises a feature nothing implements
 make check-artifacts # fail if build output or generated code is tracked by git
 make ci           # the full gate
 make dev|stg|prod
@@ -204,8 +205,21 @@ Run `make codegen` after changing:
 ## Before saying a change is done
 
 `make fmt` + `make analyze` + `make test` + `make golden` + `make check-deps` +
-`make check-props` + `make check-l10n` + `make check-artifacts` — or just
-`make ci`. A change is not done until that is green.
+`make check-props` + `make check-l10n` + `make check-flags` +
+`make check-artifacts` — or just `make ci`. A change is not done until that is
+green.
+
+**Every one of those checks is a denylist, and a denylist fails open.** Each was
+added after something slipped past the previous one, and the pattern repeats:
+`make test-coverage` reported a healthy 87% workspace while a whole screen sat
+at one covered line in forty, so it grew a per-file floor. `check-artifacts`
+reported success over three tracked `.flutter-plugins-dependencies` files
+because nothing had named them, and its `^\.dart_tool/` anchor matched only the
+copy at the repository root while nine files and 12MB of build cache sat in
+per-package ones — so it grew a second pass that greps the *header* every
+generator stamps on its output. Green means "nothing on the list was found", not
+"nothing is wrong". When a check passes and something is still broken, the check
+is the thing to fix.
 
 `make integration` is **not** in that gate and is not expected to be: it needs a
 booted device, CI runners have none, and a gate that cannot run everywhere is a
