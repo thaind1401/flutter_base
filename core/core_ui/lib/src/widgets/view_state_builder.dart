@@ -74,12 +74,31 @@ class ViewStateConsumer<B extends StateStreamable<S>, S, T> extends StatelessWid
   final WidgetBuilder? empty;
   final Widget Function(BuildContext context, Failure failure)? error;
 
+  /// A `BlocSelector`, which is what rule 11 asks every screen to use — this
+  /// widget was the counter-example living inside the design system.
+  ///
+  /// It used to be `BlocBuilder` with
+  /// `buildWhen: (p, c) => selector(p) != selector(c)` and a builder that called
+  /// `selector(state)` again. Two problems, and the second is the one that
+  /// matters:
+  ///
+  ///   * `selector` ran three times per state change instead of once, so any
+  ///     work inside it — a `where`, a `map`, a lookup — was paid triple on
+  ///     every emit, in the widget most likely to be copied;
+  ///   * the rebuild condition and the value the builder rendered were two
+  ///     separate expressions. That is exactly what rule 11 calls a last resort,
+  ///     because the two drift: change one and the widget keeps rendering while
+  ///     silently no longer rebuilding for the right reason.
+  ///
+  /// `BlocSelector` collapses both into one expression that cannot disagree
+  /// with itself, and caches the selected value so the comparison is against
+  /// what was last *rendered* rather than a re-derivation.
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<B, S>(
-      buildWhen: (previous, current) => selector(previous) != selector(current),
-      builder: (context, state) => ViewStateBuilder<T>(
-        state: selector(state),
+    return BlocSelector<B, S, ViewState<T>>(
+      selector: selector,
+      builder: (context, viewState) => ViewStateBuilder<T>(
+        state: viewState,
         data: data,
         onRetry: onRetry,
         loading: loading,

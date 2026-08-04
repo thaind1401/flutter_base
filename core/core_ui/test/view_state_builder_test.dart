@@ -241,5 +241,78 @@ void main() {
       await emitAndPump(tester, bloc, const ViewState<String>.data('different'));
       expect(builds, 2);
     });
+
+    testWidgets('runs the selector once per state change, not three times', (tester) async {
+      // This widget used to be a `BlocBuilder` whose `buildWhen` was
+      // `selector(previous) != selector(current)` and whose builder called
+      // `selector(state)` again — three invocations per emit, and a rebuild
+      // condition written separately from the value being rendered, which is
+      // precisely what rule 11 calls a last resort.
+      //
+      // Counting the calls is the only way this stays fixed: switching back to
+      // `BlocBuilder` would keep every existing test in this file green.
+      final bloc = _Bloc();
+      addTearDown(bloc.close);
+      var selectorCalls = 0;
+
+      await tester.pumpWidget(
+        host(
+          BlocProvider<_Bloc>.value(
+            value: bloc,
+            child: ViewStateConsumer<_Bloc, ViewState<String>, String>(
+              selector: (state) {
+                selectorCalls++;
+                return state;
+              },
+              data: (context, value) => Text(value),
+            ),
+          ),
+        ),
+      );
+
+      final afterFirstBuild = selectorCalls;
+      await emitAndPump(tester, bloc, const ViewState<String>.data('one'));
+
+      expect(
+        selectorCalls - afterFirstBuild,
+        1,
+        reason:
+            'the selector should be evaluated once per emit; more means the '
+            'rebuild condition and the rendered value are separate expressions',
+      );
+    });
+
+    testWidgets('a selector that ignores the changed part does not rebuild', (tester) async {
+      // The reason a screen reaches for this widget at all: one bloc driving
+      // several independent regions, each selecting the slice it renders. A
+      // region whose slice did not change must not rebuild when a sibling's
+      // does.
+      final bloc = _Bloc();
+      addTearDown(bloc.close);
+      var builds = 0;
+
+      await tester.pumpWidget(
+        host(
+          BlocProvider<_Bloc>.value(
+            value: bloc,
+            child: ViewStateConsumer<_Bloc, ViewState<String>, String>(
+              // Collapses every data state onto one value, so emitting
+              // different data changes the state but not this slice.
+              selector: (state) => state.hasData ? const ViewState<String>.data('slice') : state,
+              data: (context, value) {
+                builds++;
+                return Text(value);
+              },
+            ),
+          ),
+        ),
+      );
+
+      await emitAndPump(tester, bloc, const ViewState<String>.data('first'));
+      expect(builds, 1);
+
+      await emitAndPump(tester, bloc, const ViewState<String>.data('second'));
+      expect(builds, 1, reason: 'the underlying state changed but the selected slice did not');
+    });
   });
 }
