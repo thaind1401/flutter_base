@@ -77,6 +77,20 @@ class AppScaffold extends StatelessWidget {
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       // Translucent so taps still reach the scaffold's own gesture handlers.
       behavior: HitTestBehavior.translucent,
+      // Without this, every screen in the app carries an unnamed tappable
+      // semantics node the size of the whole window — `AppScaffold` is what all
+      // three screen bases build (rule 10), so it was every screen, not one.
+      // A screen reader announces it as a control with no name, and activating
+      // it does nothing a reader user wants: dismissing the keyboard is a
+      // pointer convenience, and TalkBack and VoiceOver both have their own way
+      // out of a text field.
+      //
+      // Invisible to everything else in the gate. `core_ui`'s accessibility
+      // suite pumps widgets through `testHost`, which has no scaffold, so the
+      // node never existed there; goldens do not render semantics at all. It
+      // took running `labeledTapTargetGuideline` over an assembled screen —
+      // see `app/test/accessibility_screens_test.dart`.
+      excludeFromSemantics: true,
       child: scaffold,
     );
   }

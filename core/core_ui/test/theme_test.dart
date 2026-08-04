@@ -82,9 +82,28 @@ void main() {
       });
 
       test('$name button and status foregrounds are readable on their fills', () {
+        // 3:1 is the large-text bar, and it is the right one *here*: these fills
+        // carry button labels and banner text, which are bold or large. The bar
+        // being deliberate is what makes the next test necessary.
         expect(_contrast(colors.onBrand, colors.brand), greaterThanOrEqualTo(3));
         expect(_contrast(colors.onStatus, colors.danger), greaterThanOrEqualTo(3));
         expect(_contrast(colors.onStatus, colors.success), greaterThanOrEqualTo(3));
+        // `info` was missing from this list entirely, which is how it ended up
+        // as a `SegmentedButton` fill at 4.10:1 with nothing objecting.
+        expect(_contrast(colors.onStatus, colors.info), greaterThanOrEqualTo(3));
+      });
+
+      test('$name container fills carry ordinary text at full AA', () {
+        // The pairing above is only safe for large or bold text. Material's
+        // *container* roles are different: they back ordinary interface text —
+        // a selected segment, a chip, an assist button — at regular weight and
+        // size, so they owe the full 4.5:1.
+        //
+        // The base failed this before it existed. `AppTheme` left
+        // `secondaryContainer` unspecified, Material fell back to `secondary`
+        // (a status colour), and the settings theme picker put white 14pt text
+        // on it. The token file looked fine; the screen did not.
+        expect(_contrast(colors.textPrimary, colors.brandSubtle), greaterThanOrEqualTo(4.5));
       });
     }
   });

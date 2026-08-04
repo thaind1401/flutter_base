@@ -69,9 +69,17 @@ class _UserCard extends StatelessWidget {
           padding: EdgeInsets.all(context.dimens.space16),
           child: Row(
             children: [
-              CircleAvatar(
-                backgroundColor: context.colors.brandSubtle,
-                child: Text(user?.displayName.initials ?? '?', style: context.textStyles.titleSm),
+              // The initials are a visual shorthand for the name rendered
+              // immediately to their right, so announcing them reads the user's
+              // identity out twice — "S I, Signed In, signed.in@example.com",
+              // with the first part spelled letter by letter or mangled into a
+              // word. Decorative duplicates of adjacent text are exactly what
+              // `ExcludeSemantics` is for.
+              ExcludeSemantics(
+                child: CircleAvatar(
+                  backgroundColor: context.colors.brandSubtle,
+                  child: Text(user?.displayName.initials ?? '?', style: context.textStyles.titleSm),
+                ),
               ),
               SizedBox(width: context.dimens.space12),
               Expanded(

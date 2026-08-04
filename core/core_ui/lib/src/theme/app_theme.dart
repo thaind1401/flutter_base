@@ -26,6 +26,21 @@ abstract final class AppTheme {
       onPrimaryContainer: colors.textPrimary,
       secondary: colors.info,
       onSecondary: colors.onStatus,
+      // Spelled out, because leaving them off is not neutral: Material falls
+      // back to `secondary`, and several widgets fill themselves from the
+      // *container* roles rather than the base ones. `SegmentedButton` is one —
+      // its selected segment took `info` as a background and put `onStatus`
+      // white on it, giving 4.10:1 behind a 14pt regular label where WCAG AA
+      // asks 4.5. A status colour is for a banner that says something happened;
+      // it was never meant to carry interface text.
+      //
+      // `brandSubtle` with `textPrimary` is the pairing these roles are for, and
+      // it is what a selected segment should look like anyway — a tint, not a
+      // saturated fill. Found by running `textContrastGuideline` over the real
+      // settings screen; no golden covers a SegmentedButton, and the token test
+      // checked `onStatus` against danger and success but never against info.
+      secondaryContainer: colors.brandSubtle,
+      onSecondaryContainer: colors.textPrimary,
       error: colors.danger,
       onError: colors.onStatus,
       surface: colors.surface,
