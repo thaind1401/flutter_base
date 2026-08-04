@@ -74,4 +74,24 @@ abstract interface class MiniApp implements RouteModule {
   /// Menu entries the host renders. Called at build time so titles can be
   /// localized and badges can be live.
   List<MiniAppEntryPoint> entryPoints(BuildContext context);
+
+  /// Localization delegates this mini-app needs installed above it.
+  ///
+  /// Return `const []` when the mini-app has no copy of its own — but return it
+  /// explicitly. There is no default implementation to inherit because this is
+  /// an `interface class`: a mini-app is written with `implements`, so every
+  /// member has to be spelled out, and that is the point. Forgetting a delegate
+  /// is not a compile error anywhere else in Flutter, and the failure it causes
+  /// is a null crash the first time the screen opens, in one language.
+  ///
+  /// [entryPoints] promises that titles "can be localized". Without this hook
+  /// that promise was false for a mini-app's *own* ARB: it cannot reach the
+  /// host's `MaterialApp` to register anything, and the host cannot name a
+  /// class from a package it does not import. The host collects these through
+  /// [MiniAppRegistry.localizationsDelegates] instead. ADR-0011.
+  ///
+  /// A mini-app that ships an ARB must support the same locales as the host, for
+  /// the same reason every other l10n package must: an unsupported locale is a
+  /// missing delegate, not an English fallback.
+  List<LocalizationsDelegate<Object?>> get localizationsDelegates;
 }

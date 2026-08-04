@@ -1,0 +1,84 @@
+# The quality gate, as a thin shell around `make`.
+#
+# Every step here is a make target. That is the whole design: the Makefile is
+# the single place package lists live, and this workflow used to be the
+# counter-example — it inlined its own `for pkg in ...` loops, they drifted from
+# CODEGEN_PACKAGES, and CI stopped generating `core_ui/lib/di.module.dart` while
+# the barrel still exported it. Do not add a package list to this file. If a
+# step needs to know which packages exist, that knowledge belongs in a target.
+#
+# FLUTTER/DART are overridden because the runner installs the SDK directly
+# rather than through FVM; locally the FVM-pinned SDK is the default and nobody
+# has to think about it.
+
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+concurrency:
+  # A new push supersedes the run in flight for the same ref.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER: flutter
+  DART: dart
+
+jobs:
+  gate:
+    name: make ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # The SDK version lives in .fvmrc and is read from it, not repeated here.
+      # A hardcoded version in this file is a second copy of the pin, and the
+      # second copy is the one that goes stale.
+      - name: Read the pinned Flutter version
+        id: sdk
+        run: echo "version=$(jq -re .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.sdk.outputs.version }}
+          cache: true
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+
+      # app/env_config/*/dart_defines.json is gitignored — it holds per-project
+      # URLs and keys. Without this the `app` package cannot build here, because
+      # --dart-define-from-file resolves against a file that is not in the repo.
+      - name: Materialise env files from the tracked samples
+        run: make env
+
+      # get + l10n + codegen + fmt-check + analyze + test + golden + check-deps.
+      # Generated code is not committed, so `codegen` inside this target is what
+      # creates it; a package missing from CODEGEN_PACKAGES fails `analyze` on
+      # the barrel that exports the file it never produced.
+      - name: Quality gate
+        run: make ci
+
+      # Only produced when `make golden` failed. A red golden step is unreadable
+      # without the images, and asking the author to reproduce it locally is
+      # asking them to reproduce a renderer — the reason `make test` skips these
+      # in the first place.
+      - name: Upload golden diffs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-failures
+          path: core/core_ui/test/failures/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Coverage
+        run: make test-coverage

@@ -39,6 +39,20 @@ class _BlocEffectListenerState<B extends BlocLifecycle<Object?>, E> extends Stat
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _bind();
+  }
+
+  /// Covers the case [didChangeDependencies] does not: a change to this
+  /// widget's own `bloc` argument is not a dependency change, so without this
+  /// the listener kept delivering effects from the bloc it was first given and
+  /// silently ignored the replacement.
+  @override
+  void didUpdateWidget(covariant BlocEffectListener<B, E> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(widget.bloc, oldWidget.bloc)) _bind();
+  }
+
+  void _bind() {
     final bloc = widget.bloc ?? context.read<B>();
     if (identical(bloc, _bloc)) return;
     _bloc = bloc;

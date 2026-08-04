@@ -3,6 +3,7 @@ import 'package:core_arch/core_arch.dart';
 // is what makes the slice explicit, which is the whole point of BlocSelector.
 import 'package:core_kit/core_kit.dart';
 import 'package:core_ui/core_ui.dart';
+import 'package:feature_auth/src/l10n/l10n_context_x.dart';
 import 'package:feature_auth/src/presentation/login/login_bloc.dart';
 import 'package:feature_auth/src/presentation/login/login_state.dart';
 import 'package:flutter/material.dart';
@@ -18,48 +19,61 @@ import 'package:flutter/material.dart';
 /// password field rebuilds the password field, not the email field, not the
 /// button, not the scaffold. See ADR-0008 for why this is the default rather
 /// than an optimisation applied later.
-class LoginScreen extends StatelessWidget {
+/// A [BaseScreen], not a [BaseListScreen] — this is a form. Its state holds an
+/// email, a password, their errors and the submit state all at once, which is
+/// why it has its own state class and one `BlocSelector` per field rather than a
+/// `PagedViewState`.
+class LoginScreen extends BaseScreen {
   const LoginScreen({super.key, this.onAuthenticated});
 
   /// Where to go after a successful sign-in. Injected by the host so this
   /// package does not need to know the app's home route exists.
   final VoidCallback? onAuthenticated;
 
+  /// No title, so no app bar: login is the first screen and has nowhere to go
+  /// back to.
   @override
-  Widget build(BuildContext context) {
+  bool get padded => true;
+
+  /// The effect listener sits inside the scaffold rather than around it, because
+  /// the base owns the scaffold now. That is the better side of the boundary
+  /// anyway: `showFailureToast` resolves its messenger against a context that
+  /// has the Scaffold as a descendant.
+  @override
+  Widget buildBody(BuildContext context) {
     return BlocEffectListener<LoginBloc, LoginEffect>(
       onEffect: (context, effect) => switch (effect) {
         LoginSucceeded() => onAuthenticated?.call(),
         LoginFailed(:final failure) => context.showFailureToast(failure),
       },
-      child: const _LoginView(),
+      child: const _LoginForm(),
     );
   }
 }
 
-class _LoginView extends StatelessWidget {
-  const _LoginView();
+class _LoginForm extends StatelessWidget {
+  const _LoginForm();
 
   @override
   Widget build(BuildContext context) {
-    return AppScaffold(
-      padded: true,
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(height: context.dimens.space48),
-            Text('Welcome back', style: context.textStyles.titleLg),
-            SizedBox(height: context.dimens.space4),
-            Text('Sign in to continue', style: context.textStyles.bodyMd.copyWith(color: context.colors.textSecondary)),
-            SizedBox(height: context.dimens.space32),
-            const _EmailField(),
-            SizedBox(height: context.dimens.space16),
-            const _PasswordField(),
-            SizedBox(height: context.dimens.space24),
-            const _SubmitButton(),
-          ],
-        ),
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(height: context.dimens.space48),
+          Text(context.authL10n.loginTitle, style: context.textStyles.titleLg),
+          SizedBox(height: context.dimens.space4),
+          Text(
+            context.authL10n.loginSubtitle,
+            style: context.textStyles.bodyMd.copyWith(color: context.colors.textSecondary),
+          ),
+          SizedBox(height: context.dimens.space32),
+          const _EmailField(),
+          SizedBox(height: context.dimens.space16),
+          const _PasswordField(),
+          SizedBox(height: context.dimens.space24),
+          const _SubmitButton(),
+        ],
       ),
     );
   }
@@ -78,8 +92,8 @@ class _EmailField extends StatelessWidget {
     return BlocSelector<LoginBloc, LoginState, Email>(
       selector: (state) => state.email,
       builder: (context, email) => AppTextField(
-        label: 'Email',
-        hint: 'you@example.com',
+        label: context.authL10n.loginEmailLabel,
+        hint: context.authL10n.loginEmailHint,
         keyboardType: TextInputType.emailAddress,
         textInputAction: TextInputAction.next,
         autofillHints: const [AutofillHints.username, AutofillHints.email],
@@ -100,7 +114,7 @@ class _PasswordField extends StatelessWidget {
     return BlocSelector<LoginBloc, LoginState, Password>(
       selector: (state) => state.password,
       builder: (context, password) => AppTextField(
-        label: 'Password',
+        label: context.authL10n.loginPasswordLabel,
         obscureText: true,
         textInputAction: TextInputAction.done,
         autofillHints: const [AutofillHints.password],
@@ -125,7 +139,7 @@ class _SubmitButton extends StatelessWidget {
     return BlocSelector<LoginBloc, LoginState, ({bool canSubmit, bool isSubmitting})>(
       selector: (state) => (canSubmit: state.canSubmit, isSubmitting: state.isSubmitting),
       builder: (context, submit) => AppButton(
-        label: 'Sign in',
+        label: context.authL10n.loginSubmit,
         isLoading: submit.isSubmitting,
         onPressed: submit.canSubmit ? () => context.read<LoginBloc>().add(const LoginSubmitted()) : null,
       ),

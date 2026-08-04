@@ -3,12 +3,12 @@ import 'dart:async';
 import 'package:app/app/di/injection.dart';
 import 'package:app/app/mini_apps/app_mini_app_host.dart';
 import 'package:app/app/session/session_cubit.dart';
+import 'package:app/app/theme/theme_mode_controller.dart';
 import 'package:core_arch/core_arch.dart';
 import 'package:core_kit/core_kit.dart';
 import 'package:feature_auth/feature_auth.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mini_app_contract/mini_app_contract.dart';
-import 'package:mini_app_sample/mini_app_sample.dart';
 
 /// Everything that must happen before the first frame, and nothing else.
 ///
@@ -52,6 +52,13 @@ final class Bootstrap {
     // whether a session exists, or a signed-in user sees the login screen flash.
     await session.restore();
 
+    // Same reasoning, one frame earlier: restoring the theme after the first
+    // frame means a user who chose dark watches the app flash light on every
+    // cold start. It is a single `SharedPreferences` read against an instance
+    // the container has already resolved, so it costs no round trip.
+    final themeMode = getIt<ThemeModeController>();
+    await themeMode.restore();
+
     final navigator = _LateNavigator();
     final host = AppMiniAppHost(
       session: session,
@@ -61,13 +68,20 @@ final class Bootstrap {
     );
 
     // The only place a mini-app package is named. Adding one is a line here
-    // plus a pubspec dependency.
-    final registry = MiniAppRegistry([SampleMiniApp()], logger: logger)..registerDependencies(getIt, host);
+    // plus a pubspec dependency — that is the whole installation cost, and the
+    // reason this list is empty rather than the mechanism being deleted.
+    //
+    // Empty on purpose: this base ships no mini-app. The contract, the registry
+    // and the host adapter stay, so a package built against
+    // `mini_app_contract` drops in here without any of them being rebuilt
+    // first. ADR-0007 has the condition under which that is worth doing.
+    final registry = MiniAppRegistry(const [], logger: logger)..registerDependencies(getIt, host);
 
     logger.info('bootstrap complete for ${getIt<AppEnvironmentConfig>().environment.name}', tag: 'startup');
     return BootstrapResult(
       registry: registry,
       session: session,
+      themeMode: themeMode,
       connectivity: getIt<ConnectivityMonitor>(),
       navigatorBinder: navigator.bind,
     );
@@ -91,12 +105,18 @@ final class BootstrapResult {
   const BootstrapResult({
     required this.registry,
     required this.session,
+    required this.themeMode,
     required this.connectivity,
     required this.navigatorBinder,
   });
 
   final MiniAppRegistry registry;
   final SessionCubit session;
+
+  /// Already restored when this is handed to `App`, so the first frame paints
+  /// in the theme the user chose rather than switching into it.
+  final ThemeModeController themeMode;
+
   final ConnectivityMonitor connectivity;
 
   /// Called once the router exists, to complete the deferred navigator.

@@ -19,4 +19,8 @@ dependencies:
 
 dev_dependencies:
   test: ^1.25.0
+  # A controllable clock for `Debouncer` and `Throttler`. Testing them with real
+  # `Future.delayed` sleeps makes the suite slow and flaky, and it cannot prove
+  # a cancelled timer never fires — only that it had not fired yet.
+  fake_async: ^1.3.1
   flutter_lints: ^6.0.0

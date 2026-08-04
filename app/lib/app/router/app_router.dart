@@ -3,6 +3,7 @@ import 'package:app/app/session/session_cubit.dart';
 import 'package:app/app/shell/app_shell.dart';
 import 'package:app/app/shell/home_screen.dart';
 import 'package:app/app/shell/splash_screen.dart';
+import 'package:app/app/theme/theme_mode_controller.dart';
 import 'package:core_arch/core_arch.dart';
 import 'package:core_kit/core_kit.dart';
 import 'package:core_ui/core_ui.dart';
@@ -21,8 +22,7 @@ final class AppRouter {
     required SessionCubit session,
     required MiniAppRegistry miniApps,
     required LoginBloc Function() loginBlocFactory,
-    required ValueNotifier<ThemeMode> themeMode,
-    required ValueChanged<ThemeMode> onThemeModeChanged,
+    required ThemeModeController themeMode,
     AppLogger logger = const NoopLogger(),
   }) {
     final listenable = SessionRefreshListenable(session);
@@ -44,7 +44,7 @@ final class AppRouter {
       shellBuilder: (context, state, child) => AppShell(child: child),
       modules: [
         _SplashRouteModule(),
-        ShellRouteModule(registry: () => miniApps, themeMode: themeMode, onThemeModeChanged: onThemeModeChanged),
+        ShellRouteModule(registry: () => miniApps, themeMode: themeMode),
         AuthRouteModule(loginBlocFactory: loginBlocFactory, onAuthenticated: (context) => HomeScreen.spec.go(context)),
         miniApps,
       ],

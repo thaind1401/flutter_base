@@ -66,3 +66,45 @@ class RestoreSessionUseCase extends NoParamsUseCase<AuthSession?> {
   @override
   Future<Result<AuthSession?>> execute(NoParams params) => _sessionStore.read();
 }
+
+/// Restores the persisted session **and publishes the result**.
+///
+/// Distinct from [RestoreSessionUseCase], which only reads: this is what startup
+/// calls, because the router's first redirect has to see a settled status rather
+/// than `unknown`.
+@injectable
+class StartSessionUseCase extends NoParamsUseCase<AuthSession?> {
+  const StartSessionUseCase(this._sessionStore);
+
+  final SessionStore _sessionStore;
+
+  @override
+  Future<Result<AuthSession?>> execute(NoParams params) => _sessionStore.restore();
+}
+
+/// The session as it changes over time.
+///
+/// A [StreamUseCase] because the session outlives any one request: a token
+/// refresh, a sign-out from another screen and a profile update all arrive
+/// asynchronously. Each event is a whole [SessionSnapshot], so a listener never
+/// has to read the store back to find out who the status belongs to — which is
+/// what keeps `SessionCubit` free of a storage dependency (rule 3).
+@injectable
+class WatchSessionUseCase extends StreamUseCase<NoParams, SessionSnapshot> {
+  const WatchSessionUseCase(this._sessionStore);
+
+  final SessionStore _sessionStore;
+
+  /// Emits the current snapshot before the first change.
+  ///
+  /// `changes` is a broadcast stream with no replay, so a subscriber that
+  /// arrives after a session already exists would otherwise sit on its initial
+  /// state until the next transition — and for a signed-in user idling on one
+  /// screen, that transition may never come. Seeding the subscription makes the
+  /// subscriber correct regardless of when it is constructed.
+  @override
+  Stream<Result<SessionSnapshot>> execute(NoParams params) async* {
+    yield Ok(_sessionStore.snapshot);
+    yield* _sessionStore.changes.map<Result<SessionSnapshot>>(Ok.new);
+  }
+}

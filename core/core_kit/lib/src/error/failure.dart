@@ -36,6 +36,21 @@ sealed class Failure extends Equatable {
     _ => false,
   };
 
+  /// `cause` and `stackTrace` are **deliberately absent**, and `runtimeType` is
+  /// deliberately present.
+  ///
+  /// Two `NetworkFailure`s raised at different call sites carry different
+  /// `StackTrace` objects, and `cause` is whatever the transport threw — a
+  /// `DioException` compares by identity. Including either would make every
+  /// failure instance unique, so `ViewFailed(failure) == ViewFailed(failure)`
+  /// would be false and a bloc re-emitting the same failure would rebuild the
+  /// screen every time. They are diagnostics, not identity.
+  ///
+  /// `runtimeType` is what separates a `NetworkFailure` from a `TimeoutFailure`,
+  /// which are otherwise field-for-field identical.
+  ///
+  /// `make check-props` knows about this exclusion by name; adding a field here
+  /// without listing it fails that check.
   @override
   List<Object?> get props => [runtimeType, debugMessage, code, traceId];
 

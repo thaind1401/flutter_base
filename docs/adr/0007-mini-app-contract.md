@@ -82,10 +82,45 @@ That deletion costs about an hour today: two packages, a branch in
 `_directoryFor`, one row in `allowedDependencies`. After ten mini-apps it is a
 migration. Decide early rather than by default.
 
-This repository keeps them because it is a base to `make rename` into several
-apps, some of which will meet the condition and some of which will not. A
-derived project should read this section and choose, instead of inheriting both
-concepts because they were there.
+## The choice this repository made
+
+The section above asked for a decision rather than a default. Here it is.
+
+**`mini_app_sample` is deleted. `mini_app_contract` stays.**
+
+The reference mini-app demonstrated the pattern, and demonstrating it was the
+only thing it did: one team ships this base from one repository, so the
+condition above — a package written by someone who cannot see the host's source
+— is not met today. Keeping a 1,600-line worked example of a pattern nobody in
+the base needs is a tax on every project derived from it, and every reader who
+has to decide whether it is load-bearing.
+
+What is kept, and why keeping it costs almost nothing:
+
+- `mini_app_contract` — `MiniApp`, `MiniAppHost`, `MiniAppRegistry`, ~150 lines,
+  fully tested against fake mini-apps including the empty case;
+- `AppMiniAppHost` in the composition root, which adapts the host side;
+- `Bootstrap.run()` passing `MiniAppRegistry(const [])`;
+- the `mini_app_*` → `mini_apps/` grouping rule in
+  `tools/check_dependencies.dart`, with the dependency row a new mini-app needs
+  written down as a comment.
+
+So installing one later is what this ADR always claimed: a package, a pubspec
+line, and one entry in `bootstrap.dart`. Nothing above has to be rebuilt or
+rediscovered first.
+
+What the deletion did cost, stated plainly rather than left to be discovered:
+`app_smoke_test.dart` no longer taps a mini-app entry point, because there is
+none to tap. That test was the only end-to-end check that
+`registerDependencies(getIt, host)` had provided everything a mini-app screen
+resolves — mini-apps get no build-time warning for a missing registration.
+`mini_app_contract`'s tests cover the registry mechanics but cannot cover the
+host reaching a real mini-app. **Adding one means restoring that test**; the
+place it used to live says so.
+
+If the condition changes — another team, another repository, a separate release
+cadence — nothing here has to be reversed. Write the package against the
+contract and add the line.
 
 ## Closing the DI gap
 

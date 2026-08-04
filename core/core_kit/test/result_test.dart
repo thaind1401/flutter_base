@@ -85,17 +85,7 @@ void main() {
     });
   });
 
-  group('Failure', () {
-    test('classifies retryability by type', () {
-      expect(const NetworkFailure().isRetryable, isTrue);
-      expect(const TimeoutFailure().isRetryable, isTrue);
-      expect(const ServerFailure().isRetryable, isTrue);
-      expect(const UnauthorizedFailure().isRetryable, isFalse);
-      expect(const ValidationFailure().isRetryable, isFalse);
-    });
-
-    test('two failures of different types are never equal', () {
-      expect(const NetworkFailure(debugMessage: 'x') == const TimeoutFailure(debugMessage: 'x'), isFalse);
-    });
-  });
+  // `Failure` itself moved to failure_test.dart — retryability, the deliberate
+  // exclusion of `cause`/`stackTrace` from `props`, and the per-subclass equality
+  // cases belong next to each other rather than as a coda to `Result`.
 }

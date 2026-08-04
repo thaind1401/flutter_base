@@ -1,0 +1,17 @@
+# A feature owns its copy, the same way it owns its widgets.
+#
+# Deliberately not a section of core_ui's ARB: a string change here would then be
+# a commit against a core package, every feature would contend for one file, and
+# a mini-app — which by ADR-0007 may only touch mini_app_contract — could not add
+# a string at all. ADR-0011.
+#
+# `nullable-getter: false` on purpose. If the host forgets to register
+# AuthL10n.delegate, `of(context)` throws rather than handing back null for a
+# caller to ignore: a missing delegate is a wiring bug and must be loud.
+arb-dir: lib/src/l10n/arb
+template-arb-file: auth_en.arb
+output-localization-file: auth_l10n.dart
+output-class: AuthL10n
+output-dir: lib/src/l10n/generated
+nullable-getter: false
+use-escaping: true

@@ -1,0 +1,46 @@
+# Copy to `.github/CODEOWNERS` and replace every handle before it does anything.
+#
+# It ships as a sample for the same reason `env_config/*/dart_defines.json`
+# does: the real file needs values this base cannot know. And unlike a wrong
+# URL, a wrong CODEOWNERS fails *silently* — GitHub cannot request review from a
+# team that does not exist, so the file sits there looking like review coverage
+# while every PR merges unreviewed. That is the failure this repo's own rules
+# call out: do not assert a guarantee you have not implemented.
+#
+# Ownership below is by architectural layer, not by directory convenience. The
+# packages that everything else depends on get the most eyes, because a mistake
+# in `core_kit` reaches every screen in the app and a mistake in a feature does
+# not.
+
+# Default. Everything not matched below.
+*                           @your-org/mobile
+
+# The layer graph itself. A change here re-shapes what every package may import,
+# and `make check-deps` will happily enforce a rule that was widened by mistake.
+/tools/                     @your-org/mobile-leads
+/Makefile                   @your-org/mobile-leads
+/.github/                   @your-org/mobile-leads
+/analysis_options.yaml      @your-org/mobile-leads
+
+# Foundations: pure Dart contracts and the base classes every feature extends.
+# `core_kit` never imports Flutter, and that is easy to break in a hurry.
+/core/core_kit/             @your-org/mobile-leads
+/core/core_arch/            @your-org/mobile-leads
+
+# Security-relevant surface. Token storage, the 401 refresh path, the
+# interceptor chain, the log redactor's blast radius.
+/core/core_storage/         @your-org/mobile-leads @your-org/security
+/core/core_network/         @your-org/mobile-leads @your-org/security
+/features/feature_auth/     @your-org/mobile-leads @your-org/security
+
+# Design system. A token change is an app-wide visual change.
+/core/core_ui/              @your-org/mobile @your-org/design
+
+# The composition root: DI, router, shell, session.
+/app/lib/app/di/            @your-org/mobile-leads
+/app/lib/app/router/        @your-org/mobile-leads
+
+# Decisions, not code. Changing an ADR changes what the next person is allowed
+# to do, so it is reviewed by whoever has to live with it.
+/docs/adr/                  @your-org/mobile-leads
+/CLAUDE.md                  @your-org/mobile-leads

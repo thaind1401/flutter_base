@@ -8,11 +8,15 @@ void main() {
   late InMemoryStore storage;
   late SessionStoreImpl store;
 
-  AuthSession session() => AuthSession(
+  /// A fixed expiry, not `DateTime.now()`: the store now deduplicates on the
+  /// whole session, so a clock-derived field would make two "identical" saves
+  /// differ by microseconds and the deduplication test would pass for the wrong
+  /// reason. Far enough ahead that nothing here reads as expired.
+  AuthSession session({String displayName = 'Tester'}) => AuthSession(
     accessToken: 'access',
     refreshToken: 'refresh',
-    expiresAt: DateTime.now().add(const Duration(hours: 1)),
-    user: const AuthUser(id: 'u1', email: 'a@b.com', displayName: 'Tester'),
+    expiresAt: DateTime.utc(2099),
+    user: AuthUser(id: 'u1', email: 'a@b.com', displayName: displayName),
   );
 
   setUp(() {
@@ -35,7 +39,7 @@ void main() {
   });
 
   test('save persists and publishes authenticated', () async {
-    final published = <SessionStatus>[];
+    final published = <SessionSnapshot>[];
     final subscription = store.changes.listen(published.add);
 
     await store.save(session());
@@ -43,7 +47,7 @@ void main() {
 
     expect(store.status, SessionStatus.authenticated);
     expect(store.current?.user.id, 'u1');
-    expect(published, [SessionStatus.authenticated]);
+    expect(published.map((s) => s.status), [SessionStatus.authenticated]);
     await subscription.cancel();
   });
 
@@ -85,15 +89,34 @@ void main() {
     expect(result.failureOrNull, isA<CacheFailure>());
   });
 
-  test('does not publish a status it is already in', () async {
-    final published = <SessionStatus>[];
+  test('does not republish an identical session', () async {
+    final published = <SessionSnapshot>[];
     final subscription = store.changes.listen(published.add);
 
     await store.save(session());
     await store.save(session());
     await Future<void>.delayed(Duration.zero);
 
-    expect(published, [SessionStatus.authenticated]);
+    expect(published, hasLength(1));
+    await subscription.cancel();
+  });
+
+  test('publishes a profile change that leaves the status alone', () async {
+    // The bug this exists for: deduplication used to compare statuses, so
+    // saving a different user while already `authenticated` published nothing
+    // and no listener ever learned the profile had changed. `SessionState`'s
+    // doc comment in the host describes the symptom — a name that never
+    // updates — and fixes the widget half; this is the half underneath.
+    final published = <SessionSnapshot>[];
+    final subscription = store.changes.listen(published.add);
+
+    await store.save(session());
+    await store.save(session(displayName: 'Renamed'));
+    await Future<void>.delayed(Duration.zero);
+
+    expect(published, hasLength(2), reason: 'a new profile at a steady status must publish');
+    expect(published.map((s) => s.status), [SessionStatus.authenticated, SessionStatus.authenticated]);
+    expect(published.last.user?.displayName, 'Renamed');
     await subscription.cancel();
   });
 }

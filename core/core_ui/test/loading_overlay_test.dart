@@ -2,6 +2,8 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'support/host.dart';
+
 void main() {
   group('LoadingOverlayController', () {
     late LoadingOverlayController controller;
@@ -107,12 +109,12 @@ void main() {
       description: 'an AbsorbPointer that is actually absorbing',
     );
 
-    Widget host() => MaterialApp(
-      theme: AppTheme.light(),
-      home: LoadingOverlayHost(
+    Widget host() => testHost(
+      LoadingOverlayHost(
         controller: controller,
         child: const Scaffold(body: Text('screen content')),
       ),
+      scaffold: false,
     );
 
     testWidgets('renders nothing over the child while hidden', (tester) async {

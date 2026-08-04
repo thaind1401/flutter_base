@@ -1,0 +1,11 @@
+{
+  "@@locale": "vi",
+
+  "loginTitle": "Chào mừng trở lại",
+  "loginSubtitle": "Đăng nhập để tiếp tục",
+
+  "loginEmailLabel": "Email",
+  "loginEmailHint": "ban@vidu.com",
+  "loginPasswordLabel": "Mật khẩu",
+  "loginSubmit": "Đăng nhập"
+}

@@ -56,5 +56,12 @@
   "connectivityRestored": "Đã kết nối lại",
 
   "loadMoreFailed": "Không tải thêm được",
-  "pullToRefresh": "Kéo để làm mới"
+  "pullToRefresh": "Kéo để làm mới",
+
+  "a11yButtonBusy": "{label}, đang xử lý",
+  "a11yShowPassword": "Hiện mật khẩu",
+  "a11yHidePassword": "Ẩn mật khẩu",
+  "a11yRequiredField": "bắt buộc",
+  "a11yLoadingMore": "Đang tải thêm",
+  "a11yThemeMode": "Giao diện"
 }

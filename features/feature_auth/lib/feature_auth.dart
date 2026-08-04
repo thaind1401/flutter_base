@@ -15,6 +15,11 @@ export 'src/domain/entities/auth_session.dart';
 export 'src/domain/repositories/auth_repository.dart';
 export 'src/domain/session/session_store.dart';
 export 'src/domain/use_cases/auth_use_cases.dart';
+// The host has to register `AuthL10n.delegate` — a generated class that is not
+// exported is a delegate the host cannot name, and an unregistered delegate is a
+// null crash the first time one of these screens opens. ADR-0011.
+export 'src/l10n/generated/auth_l10n.dart';
+export 'src/l10n/l10n_context_x.dart';
 export 'src/presentation/auth_route_module.dart';
 export 'src/presentation/login/login_bloc.dart' show LoginBloc;
 // The effect subtypes travel with the sealed base: a caller switching over

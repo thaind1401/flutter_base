@@ -41,7 +41,7 @@ final class FakeAuthRepository implements AuthRepository {
 final class FakeSessionStore implements SessionStore {
   AuthSession? saved;
   Failure? failSave;
-  final StreamController<SessionStatus> _changes = StreamController<SessionStatus>.broadcast();
+  final StreamController<SessionSnapshot> _changes = StreamController<SessionSnapshot>.broadcast();
 
   @override
   AuthSession? get current => saved;
@@ -50,7 +50,10 @@ final class FakeSessionStore implements SessionStore {
   SessionStatus get status => saved == null ? SessionStatus.unauthenticated : SessionStatus.authenticated;
 
   @override
-  Stream<SessionStatus> get changes => _changes.stream;
+  SessionSnapshot get snapshot => SessionSnapshot(status: status, session: saved);
+
+  @override
+  Stream<SessionSnapshot> get changes => _changes.stream;
 
   @override
   Future<Result<AuthSession?>> restore() async => Ok(saved);
@@ -63,17 +66,24 @@ final class FakeSessionStore implements SessionStore {
     final failure = failSave;
     if (failure != null) return Err(failure);
     saved = session;
-    _changes.add(SessionStatus.authenticated);
+    _changes.add(SessionSnapshot(status: SessionStatus.authenticated, session: session));
     return const Ok(unit);
   }
 
   @override
   Future<Result<Unit>> clear() async {
     saved = null;
-    _changes.add(SessionStatus.unauthenticated);
+    _changes.add(const SessionSnapshot(status: SessionStatus.unauthenticated));
     return const Ok(unit);
   }
 
   @override
-  Future<void> dispose() => _changes.close();
+  /// Does **not** await the close.
+  ///
+  /// `StreamController.close()` returns a future created inside whatever zone
+  /// called it. In a `testWidgets` body that is the fake-async zone, while
+  /// `addTearDown` is awaited outside it — so awaiting the close there hangs the
+  /// test forever with no error, and the whole package's suite with it. A fake's
+  /// teardown must never be able to do that.
+  Future<void> dispose() async => unawaited(_changes.close());
 }

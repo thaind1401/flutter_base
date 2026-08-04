@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:core_arch/core_arch.dart';
+import 'package:core_kit/core_kit.dart';
 import 'package:feature_auth/feature_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
@@ -36,16 +37,27 @@ final class SessionState extends Equatable {
 /// class is a cubit and nothing else.
 @lazySingleton
 final class SessionCubit extends BaseCubit<SessionState> {
-  SessionCubit(this._sessionStore, this._signOut, {super.logger}) : super(_read(_sessionStore)) {
-    listenTo(_sessionStore.changes, (_) => safeEmit(_read(_sessionStore)));
+  /// Three use cases and no `SessionStore`, which is rule 3: a bloc depends on
+  /// use cases only, never on storage. This class used to take the store and
+  /// re-read `status` and `current` from it on every notification — the reason
+  /// it could is that `changes` carried only a status, so the event was not
+  /// enough on its own. Now it carries a whole `SessionSnapshot` and the
+  /// re-read is gone with the dependency.
+  SessionCubit(this._watchSession, this._startSession, this._signOut, {super.logger})
+    : super(const SessionState.unknown()) {
+    listenTo(_watchSession(const NoParams()), (result) {
+      // The stream only ever carries Ok — the store publishes state it already
+      // holds, so there is nothing left to fail. Handled rather than assumed so
+      // a future store that can fail mid-stream does not silently do nothing.
+      if (result case Ok(:final value)) {
+        safeEmit(SessionState(status: value.status, user: value.user));
+      }
+    });
   }
 
-  final SessionStore _sessionStore;
+  final WatchSessionUseCase _watchSession;
+  final StartSessionUseCase _startSession;
   final SignOutUseCase _signOut;
-
-  /// Snapshots the store into a value. Every emit goes through this, so status
-  /// and user can never disagree about which session they describe.
-  static SessionState _read(SessionStore store) => SessionState(status: store.status, user: store.current?.user);
 
   AuthUser? get user => state.user;
 
@@ -54,15 +66,13 @@ final class SessionCubit extends BaseCubit<SessionState> {
   /// Called once during bootstrap, before the first frame, so the router's
   /// first redirect already knows whether there is a session — otherwise the
   /// app flashes the login screen for a signed-in user.
-  Future<void> restore() async {
-    await _sessionStore.restore();
-    safeEmit(_read(_sessionStore));
-  }
+  ///
+  /// No `safeEmit` afterwards: restoring publishes on `changes`, and the
+  /// listener above turns that into state. Emitting here as well would be a
+  /// second source of truth for the same transition.
+  Future<void> restore() => _startSession(const NoParams());
 
-  Future<void> signOut() async {
-    await _signOut(const NoParams());
-    safeEmit(_read(_sessionStore));
-  }
+  Future<void> signOut() => _signOut(const NoParams());
 }
 
 /// Adapts the cubit's stream to the `Listenable` go_router wants.

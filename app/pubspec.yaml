@@ -24,20 +24,29 @@ dependencies:
   core_storage: ^1.0.0
   mini_app_contract: ^1.0.0
   feature_auth: ^1.0.0
-  mini_app_sample: ^1.0.0
-  get_it: ^8.0.3
-  injectable: ^2.6.0
-  device_info_plus: ^11.2.0
-  package_info_plus: ^8.1.2
+  intl: ^0.20.2
+  get_it: ^9.2.1
+  injectable: ^3.0.0
+  device_info_plus: ^13.2.0
+  package_info_plus: ^10.2.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # Drives integration_test/, which boots the app on a real device against the
+  # real plugin channels. `app/test/app_smoke_test.dart` mocks secure storage,
+  # shared preferences and connectivity, so it can never catch a keychain
+  # entitlement, a missing Android permission or a plugin that fails to
+  # register — the failures that only exist on a device.
+  integration_test:
+    sdk: flutter
   # Used by injection_test.dart to seed the preference store's mock values.
-  shared_preferences: ^2.3.3
+  shared_preferences: ^2.5.5
   flutter_lints: ^6.0.0
-  build_runner: ^2.4.13
-  injectable_generator: ^2.6.2
+  build_runner: ^2.15.1
+  injectable_generator: ^3.0.2
 
 flutter:
   uses-material-design: true
+  # Required for `flutter gen-l10n` to produce AppL10n here. See app/l10n.yaml.
+  generate: true

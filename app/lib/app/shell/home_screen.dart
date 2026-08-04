@@ -1,3 +1,4 @@
+import 'package:app/app/l10n/l10n_context_x.dart';
 import 'package:app/app/session/session_cubit.dart';
 import 'package:core_arch/core_arch.dart';
 import 'package:core_kit/core_kit.dart';
@@ -11,7 +12,13 @@ import 'package:mini_app_contract/mini_app_contract.dart';
 /// Its only interesting job is rendering the installed mini-apps. Note that it
 /// reads them from [MiniAppRegistry] and never imports a mini-app package —
 /// adding one changes the DI list, not this file.
-class HomeScreen extends StatelessWidget {
+/// A [BaseScreen] rather than a [BaseListScreen], even though its body is a
+/// `ListView`. The distinction is pagination, not the widget: this list is the
+/// installed mini-apps, which arrive complete from the registry — there is no
+/// page to load, nothing to refresh and no `PagedViewState`. Reaching for
+/// `BaseListScreen` here would demand `onLoadMore` and `onRefresh` that have
+/// nothing to do.
+class HomeScreen extends BaseScreen {
   const HomeScreen({super.key, required this.registry});
 
   static const RouteSpec spec = RouteSpec(name: 'home', path: '/home');
@@ -19,23 +26,25 @@ class HomeScreen extends StatelessWidget {
   final MiniAppRegistry registry;
 
   @override
-  Widget build(BuildContext context) {
+  String? title(BuildContext context) => context.appL10n.homeTitle;
+
+  @override
+  bool get padded => true;
+
+  @override
+  Widget buildBody(BuildContext context) {
     final entries = registry.entryPointsFor(context, MiniAppPlacement.home);
 
-    return AppScaffold(
-      title: 'Home',
-      padded: true,
-      body: ListView(
-        children: [
-          const _UserCard(),
-          SizedBox(height: context.dimens.space24),
-          if (entries.isNotEmpty) ...[
-            Text('Apps', style: context.textStyles.titleSm),
-            SizedBox(height: context.dimens.space12),
-            for (final entry in entries) ...[_MiniAppTile(entry: entry), SizedBox(height: context.dimens.space8)],
-          ],
+    return ListView(
+      children: [
+        const _UserCard(),
+        SizedBox(height: context.dimens.space24),
+        if (entries.isNotEmpty) ...[
+          Text(context.appL10n.homeAppsSection, style: context.textStyles.titleSm),
+          SizedBox(height: context.dimens.space12),
+          for (final entry in entries) ...[_MiniAppTile(entry: entry), SizedBox(height: context.dimens.space8)],
         ],
-      ),
+      ],
     );
   }
 }
@@ -60,18 +69,26 @@ class _UserCard extends StatelessWidget {
           padding: EdgeInsets.all(context.dimens.space16),
           child: Row(
             children: [
-              CircleAvatar(
-                backgroundColor: context.colors.brandSubtle,
-                child: Text(user?.displayName.initials ?? '?', style: context.textStyles.titleSm),
+              // The initials are a visual shorthand for the name rendered
+              // immediately to their right, so announcing them reads the user's
+              // identity out twice — "S I, Signed In, signed.in@example.com",
+              // with the first part spelled letter by letter or mangled into a
+              // word. Decorative duplicates of adjacent text are exactly what
+              // `ExcludeSemantics` is for.
+              ExcludeSemantics(
+                child: CircleAvatar(
+                  backgroundColor: context.colors.brandSubtle,
+                  child: Text(user?.displayName.initials ?? '?', style: context.textStyles.titleSm),
+                ),
               ),
               SizedBox(width: context.dimens.space12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(user?.displayName ?? 'Guest', style: context.textStyles.titleSm),
+                    Text(user?.displayName ?? context.appL10n.homeGuestName, style: context.textStyles.titleSm),
                     Text(
-                      user?.email ?? 'Not signed in',
+                      user?.email ?? context.appL10n.homeGuestSubtitle,
                       style: context.textStyles.bodySm.copyWith(color: context.colors.textSecondary),
                     ),
                   ],

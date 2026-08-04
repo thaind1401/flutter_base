@@ -1,0 +1,89 @@
+# Integration tests on a real Android emulator.
+#
+# Split out of ci.yml rather than added to it, for a reason that is about
+# incentives rather than time: booting an emulator takes minutes and is the
+# flakiest thing in any mobile pipeline. Put that on every pull request and the
+# team learns to re-run a red build without reading it, which costs more than
+# the tests are worth. Here it runs nightly and on demand, and a failure is a
+# real signal because nothing else is competing for attention with it.
+#
+# What these cover that `make ci` cannot: the real plugin channels.
+# `app/test/app_smoke_test.dart` mocks secure storage, shared preferences and
+# connectivity, so a keychain that is not entitled, a `minSdk` below what the
+# storage plugin needs, or a plugin that fails to register are all invisible to
+# it — and all fatal on a handset.
+
+name: Integration
+
+on:
+  schedule:
+    # Nightly, well clear of working hours in +07.
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+  # Changes to startup, DI or storage are exactly what these catch, so they run
+  # on a pull request that touches one rather than waiting for the night.
+  pull_request:
+    paths:
+      - 'app/lib/app/bootstrap.dart'
+      - 'app/lib/app/di/**'
+      - 'app/integration_test/**'
+      - 'core/core_storage/**'
+      - '.github/workflows/integration.yml'
+
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER: flutter
+  DART: dart
+
+jobs:
+  android:
+    name: Android emulator
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the pinned Flutter version
+        id: sdk
+        run: echo "version=$(jq -re .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.sdk.outputs.version }}
+          cache: true
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+
+      - name: Materialise env files from the tracked samples
+        run: make env
+
+      - name: Generate code
+        run: make get l10n codegen
+
+      # KVM, or the emulator falls back to ARM translation and the run times out
+      # rather than failing with anything you could read.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # API 34 rather than the newest available: the point is to run against the
+      # API level the app actually targets, not the one the runner ships today.
+      - name: Run integration tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: make integration

@@ -1,0 +1,14 @@
+# The host's own copy: shell chrome, tab labels, settings.
+#
+# `AppL10n` is also where the app's supported locale set is declared, because
+# adding a language is a product decision about the app rather than about any one
+# package. Every other l10n package must ship the same locales — `make check-l10n`
+# fails if one falls behind, because a delegate that does not support the active
+# locale is not merely untranslated, it is a null crash. ADR-0011.
+arb-dir: lib/app/l10n/arb
+template-arb-file: app_en.arb
+output-localization-file: app_l10n.dart
+output-class: AppL10n
+output-dir: lib/app/l10n/generated
+nullable-getter: false
+use-escaping: true

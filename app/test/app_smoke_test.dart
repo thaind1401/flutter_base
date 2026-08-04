@@ -3,11 +3,14 @@ import 'dart:convert';
 import 'package:app/app/app.dart';
 import 'package:app/app/bootstrap.dart';
 import 'package:app/app/di/injection.dart';
+import 'package:app/app/theme/theme_mode_controller.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:feature_auth/feature_auth.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/boot_harness.dart';
 
 // The test that was missing.
 //
@@ -25,63 +28,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 // No HTTP is stubbed. `core_network` deliberately does not export the Dio
 // adapter, so a test that reaches the network here hangs on a real socket
 // rather than failing. Keep every path in this file off the wire.
-
-/// The keychain the app boots against. Seeded per test, so a suite can boot
-/// signed out, signed in, or with a payload from an older build.
-late Map<String, String> _keychain;
-
-Future<Object?> _secureStorageStub(MethodCall call) async {
-  final arguments = (call.arguments as Map?)?.cast<String, Object?>() ?? const {};
-  final key = arguments['key'] as String?;
-
-  return switch (call.method) {
-    'readAll' => Map<String, String>.from(_keychain),
-    'read' => _keychain[key],
-    'write' => _keychain[key!] = arguments['value']! as String,
-    'delete' => _keychain.remove(key),
-    'containsKey' => _keychain.containsKey(key),
-    _ => null,
-  };
-}
-
-/// A persisted session in the shape `SessionStoreImpl` writes, under the key it
-/// writes it to. Built from the real `toStorageJson` rather than a hand-written
-/// literal, so a change to the stored shape cannot leave this fixture behind.
-String _storedSession({DateTime? expiresAt}) => jsonEncode(
-  AuthSession(
-    accessToken: 'stored-access-token',
-    refreshToken: 'stored-refresh-token',
-    expiresAt: expiresAt ?? DateTime.now().add(const Duration(hours: 1)),
-    user: const AuthUser(id: 'u1', email: 'signed.in@example.com', displayName: 'Signed In'),
-  ).toStorageJson(),
-);
+//
+// The platform stubs and the stored-session fixture live in
+// `support/boot_harness.dart`, because `localization_test.dart` boots the same
+// real app and copying three channel mocks is how the two drift apart.
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() {
-    SharedPreferences.setMockInitialValues({});
-    _keychain = {};
-
-    final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
-
-    messenger.setMockMethodCallHandler(
-      const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
-      _secureStorageStub,
-    );
-
-    // Connectivity is probed during bootstrap without being awaited. Left
-    // unmocked it raises MissingPluginException as an unhandled async error,
-    // which fails the test for a reason that has nothing to do with the app.
-    messenger.setMockMethodCallHandler(
-      const MethodChannel('dev.fluttercommunity.plus/connectivity'),
-      (call) async => call.method == 'check' ? <String>['wifi'] : null,
-    );
-    messenger.setMockStreamHandler(
-      const EventChannel('dev.fluttercommunity.plus/connectivity_status'),
-      MockStreamHandler.inline(onListen: (arguments, events) => events.success(<String>['wifi'])),
-    );
-  });
+  setUp(installPlatformMocks);
 
   tearDown(getIt.reset);
 
@@ -114,7 +69,7 @@ void main() {
   });
 
   testWidgets('a stored session lands on home without flashing login', (tester) async {
-    _keychain['auth.session'] = _storedSession();
+    keychain['auth.session'] = storedSession();
 
     final bootstrap = await Bootstrap.run();
     await tester.pumpWidget(App(bootstrap: bootstrap));
@@ -136,7 +91,7 @@ void main() {
     // What a shipped schema change looks like on a device that already has the
     // old payload. Landing on login is correct; crashing on every launch with
     // no way out but reinstalling is not.
-    _keychain['auth.session'] = jsonEncode({'accessToken': 'only-this-field-survived'});
+    keychain['auth.session'] = jsonEncode({'accessToken': 'only-this-field-survived'});
 
     final bootstrap = await Bootstrap.run();
     await tester.pumpWidget(App(bootstrap: bootstrap));
@@ -147,11 +102,11 @@ void main() {
 
     // And the unreadable payload is cleared, so the next launch does not repeat
     // the parse.
-    expect(_keychain.containsKey('auth.session'), isFalse);
+    expect(keychain.containsKey('auth.session'), isFalse);
   });
 
   testWidgets('an unparseable keychain entry does not stop the app opening', (tester) async {
-    _keychain['auth.session'] = '{ this is not json';
+    keychain['auth.session'] = '{ this is not json';
 
     final bootstrap = await Bootstrap.run();
     await tester.pumpWidget(App(bootstrap: bootstrap));
@@ -161,31 +116,87 @@ void main() {
     expect(find.text('Welcome back'), findsOneWidget);
   });
 
-  testWidgets('a mini-app opens from home with its own dependencies resolved', (tester) async {
-    _keychain['auth.session'] = _storedSession();
+  testWidgets('the stored theme is applied on the first frame, not after it', (tester) async {
+    // The regression this exists for is not "dark mode does not work" — the
+    // unit test covers the controller. It is that `Bootstrap.run` might stop
+    // awaiting `themeMode.restore()`, at which point the app still ends up in
+    // dark, just one frame late, and every cold start flashes light. Only a
+    // test that boots the real app and looks at the *first* frame sees that.
+    SharedPreferences.setMockInitialValues({'flutter.${ThemeModeController.storageKey}': 'dark'});
+
+    final bootstrap = await Bootstrap.run();
+    await tester.pumpWidget(App(bootstrap: bootstrap));
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(bootstrap.themeMode.value, ThemeMode.dark);
+
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.themeMode, ThemeMode.dark);
+
+    // Resolved from a context *below* `MaterialApp`, not from its own element:
+    // `MaterialApp` builds the `Theme` as a descendant, so `Theme.of` on the
+    // element above it reads Flutter's fallback and passes no matter what the
+    // app was configured with. `LoadingOverlayHost` is mounted by the router's
+    // builder, which is inside that `Theme`.
+    expect(
+      Theme.of(tester.element(find.byType(LoadingOverlayHost))).brightness,
+      Brightness.dark,
+      reason: 'the first frame painted in light and switched afterwards',
+    );
+
+    // The assertions above are the point and they run on the first frame; this
+    // only drains the redirect the splash route schedules, which the binding
+    // otherwise reports as a pending timer at teardown.
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('no stored theme boots on system', (tester) async {
+    final bootstrap = await Bootstrap.run();
+    await tester.pumpWidget(App(bootstrap: bootstrap));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(bootstrap.themeMode.value, ThemeMode.system);
+  });
+
+  testWidgets('home renders with no mini-apps installed', (tester) async {
+    // This base ships an empty registry (see Bootstrap.run), so the shape that
+    // has to keep working is the empty one: the host still builds its entry
+    // point area, and `MiniAppRegistry(const [])` contributes no routes to
+    // AppRouterBuilder. An empty list reaching a widget that assumed at least
+    // one element is the failure this catches.
+    keychain['auth.session'] = storedSession();
 
     final bootstrap = await Bootstrap.run();
     await tester.pumpWidget(App(bootstrap: bootstrap));
     await tester.pumpAndSettle();
 
-    // This is the mini-app equivalent of the injectable generator's
-    // "I cannot see this registration" warning, which mini-apps do not get:
-    // they register at runtime through `registerDependencies(getIt, host)`
-    // rather than through a micro-package module, so nothing at build time
-    // notices a missing one. Opening the screen for real does.
-    //
-    // Deliberately driven through the entry point rather than by navigating to
-    // the path directly — that exercises MiniAppRegistry.entryPointsFor, the
-    // host's rendering of it, and onOpen, which is the whole install path.
-    await tester.tap(find.text('Articles'));
-    await tester.pumpAndSettle();
-
-    expect(tester.takeException(), isNull, reason: 'a mini-app dependency was never registered');
-    expect(find.textContaining('Sample article #1'), findsOneWidget);
+    expect(bootstrap.registry.miniApps, isEmpty);
+    expect(tester.takeException(), isNull);
+    // The signed-in user's card, which is unique to home — 'Home' itself appears
+    // twice, as the app bar title and the shell's navigation label.
+    expect(find.text('Signed In'), findsOneWidget, reason: 'home still renders without any mini-app');
+    // HomeScreen omits the whole section when there are no entries, rather than
+    // drawing an empty heading. That is the behaviour an empty registry relies
+    // on, so it is asserted rather than left to chance.
+    expect(find.text('Apps'), findsNothing);
   });
 
+  // What is deliberately NOT covered any more, so the gap is visible rather
+  // than assumed: a mini-app being opened from its entry point on home. That
+  // test tapped 'Articles' in the sample mini-app and asserted its screen
+  // rendered, which was the only check that `registerDependencies(getIt, host)`
+  // had actually provided everything the screen resolves — mini-apps register
+  // at runtime, so nothing at build time notices a missing registration.
+  //
+  // `mini_app_contract`'s own tests cover the registry mechanics against fake
+  // mini-apps, including the empty case. They cannot cover the host reaching a
+  // real one. **Adding a mini-app means restoring a test here that taps its
+  // entry point and asserts its screen renders** — see ADR-0007 and CLAUDE.md.
+
   testWidgets('losing the session mid-run redirects off the protected screen', (tester) async {
-    _keychain['auth.session'] = _storedSession();
+    keychain['auth.session'] = storedSession();
 
     final bootstrap = await Bootstrap.run();
     await tester.pumpWidget(App(bootstrap: bootstrap));

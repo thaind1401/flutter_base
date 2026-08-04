@@ -14,13 +14,66 @@ import 'package:meta/meta.dart';
 ///     forgotten `cancel()` cannot leak a listener for the app's lifetime.
 ///   * [emitEffect] — one-shot side effects (navigate, toast, close sheet) as a
 ///     stream, not as flags smuggled through state. A flag has to be cleared,
-///     and if it is not, the toast fires again on every rebuild.
+///     and if it is not, the toast fires again on every rebuild. Effects emitted
+///     before the first subscriber are held and replayed rather than dropped;
+///     see [_pendingEffects] for why that is bounded to the first subscriber
+///     only.
 mixin BlocLifecycle<State> on BlocBase<State> {
+  /// How many effects are held for a bloc nothing has subscribed to yet.
+  ///
+  /// Reaching it means a bloc is emitting one-shot effects into a tree that has
+  /// no listener, which is a design error rather than a load problem — hence the
+  /// assert. Release builds drop the oldest instead of growing without bound.
+  static const int maxPendingEffects = 32;
+
   final List<StreamSubscription<Object?>> _subscriptions = [];
-  final StreamController<Object> _effects = StreamController<Object>.broadcast();
+
+  /// Effects emitted before the first subscriber arrived.
+  ///
+  /// A broadcast stream discards anything added while nobody is listening, and
+  /// `BlocEffectListener` does not subscribe until `didChangeDependencies` — its
+  /// first build. So an effect emitted any earlier used to vanish with no error
+  /// and nothing in the logs: a cubit method called from `initState`, or
+  /// `SessionCubit` reacting during `Bootstrap.run()`, which happens before a
+  /// widget tree exists at all. Rule 4 requires *every* one-shot outcome to go
+  /// through this channel, so "the toast simply never appeared" was a supported
+  /// way to use it.
+  final List<Object> _pendingEffects = [];
+
+  bool _hasEverListened = false;
+
+  late final StreamController<Object> _effects = StreamController<Object>.broadcast(onListen: _flushPendingEffects);
 
   /// One-shot side effects. Listened to by `BlocEffectListener` in `core_ui`.
   Stream<Object> get effects => _effects.stream;
+
+  /// Replays what was emitted before anyone was listening — **once**.
+  ///
+  /// Deliberately not "buffer whenever there is no listener". A singleton that
+  /// outlives its screen — `SessionCubit` is one — would then accumulate effects
+  /// while the app sits in the background and fire the whole backlog at whatever
+  /// screen mounts next. A one-shot effect from ten minutes ago is worse than a
+  /// lost one: the user gets a toast about something they have already moved on
+  /// from. Only the start-up race is repaired; after the first listener, plain
+  /// broadcast semantics apply.
+  void _flushPendingEffects() {
+    if (_hasEverListened) return;
+    _hasEverListened = true;
+    if (_pendingEffects.isEmpty) return;
+
+    final pending = List<Object>.of(_pendingEffects);
+    _pendingEffects.clear();
+
+    // `onListen` runs synchronously inside `listen()`, before the subscription
+    // is handed back, so adding here would deliver into the gap this exists to
+    // close. A microtask puts delivery after `listen()` returns.
+    scheduleMicrotask(() {
+      if (_effects.isClosed) return;
+      for (final effect in pending) {
+        _effects.add(effect);
+      }
+    });
+  }
 
   /// Emits only while the bloc is open.
   @protected
@@ -32,6 +85,19 @@ mixin BlocLifecycle<State> on BlocBase<State> {
   @protected
   void emitEffect(Object effect) {
     if (isClosed || _effects.isClosed) return;
+
+    if (!_hasEverListened) {
+      assert(
+        _pendingEffects.length < maxPendingEffects,
+        'More than $maxPendingEffects effects were emitted by $runtimeType before anything '
+        'listened. Effects are for one-shot outcomes a screen reacts to; a bloc producing '
+        'this many with no listener is signalling into a tree that is not there.',
+      );
+      if (_pendingEffects.length >= maxPendingEffects) _pendingEffects.removeAt(0);
+      _pendingEffects.add(effect);
+      return;
+    }
+
     _effects.add(effect);
   }
 
@@ -54,6 +120,9 @@ mixin BlocLifecycle<State> on BlocBase<State> {
       await subscription.cancel();
     }
     _subscriptions.clear();
+    // Anything still waiting for a listener that never arrived. Closing without
+    // this would leave the list alive for as long as something holds the bloc.
+    _pendingEffects.clear();
     await _effects.close();
     return super.close();
   }

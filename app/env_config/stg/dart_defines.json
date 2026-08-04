@@ -1,6 +1,0 @@
-{
-  "APP_ENV": "stg",
-  "BASE_URL": "https://api-stg.example.com",
-  "CONNECT_TIMEOUT_SECONDS": 30,
-  "RECEIVE_TIMEOUT_SECONDS": 30
-}

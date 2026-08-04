@@ -107,42 +107,59 @@ void main() {
 
   group('IntX', () {
     test('reads as durations', () {
+      expect(5.milliseconds, const Duration(milliseconds: 5));
       expect(5.seconds, const Duration(seconds: 5));
+      expect(3.minutes, const Duration(minutes: 3));
       expect(2.hours, const Duration(hours: 2));
+      expect(7.days, const Duration(days: 7));
     });
   });
 
-  group('PagedList', () {
-    PagedList<int> page(List<int> items, {int page = 1, bool hasMore = true}) =>
-        PagedList<int>(items: items, page: page, hasMore: hasMore, totalItems: 10);
-
-    test('empty is empty', () {
-      expect(const PagedList<int>.empty().isEmpty, isTrue);
-      expect(const PagedList<int>.empty().hasMore, isFalse);
+  group('NumX', () {
+    // The locale is passed explicitly everywhere here. `NumberFormat` falls
+    // back to the ambient default otherwise, which differs between a developer
+    // machine and CI and turns a formatting test into a coin flip.
+    test('compact formatting groups thousands', () {
+      expect(1234567.toCompactString(locale: 'en_US'), '1,234,567');
+      expect(999.toCompactString(locale: 'en_US'), '999');
+      expect(0.toCompactString(locale: 'en_US'), '0');
     });
 
-    test('merge appends and adopts the newer cursor', () {
-      final merged = page([1, 2]).merge(page([3, 4], page: 2, hasMore: false));
-      expect(merged.items, [1, 2, 3, 4]);
-      expect(merged.page, 2);
-      expect(merged.hasMore, isFalse);
+    test('compact formatting follows the locale separator', () {
+      // vi_VN groups with a dot. The app ships `vi`, so this is a real output,
+      // not a hypothetical one.
+      expect(1234567.toCompactString(locale: 'vi_VN'), '1.234.567');
     });
 
-    test('map transforms items and keeps the cursor', () {
-      final mapped = page([1, 2]).map((e) => 'n$e');
-      expect(mapped.items, ['n1', 'n2']);
-      expect(mapped.hasMore, isTrue);
+    test('currency defaults to whole units', () {
+      // `decimalDigits: 0` by default because the app's primary currency has no
+      // minor unit; asking for cents is opt-in.
+      // vi_VN puts the symbol after the amount, en_US before it. Pinning both
+      // placements is the point: hardcoding one in a widget is the bug this
+      // extension exists to prevent.
+      //
+      // Asserted in two halves rather than as one literal because ICU separates
+      // the amount from the symbol with a no-break space (U+00A0). Pasting that
+      // invisible character into the source makes the expectation unreadable
+      // and the next edit unreproducible.
+      final dong = 50000.toCurrency(locale: 'vi_VN', symbol: '₫');
+      expect(dong, startsWith('50.000'));
+      expect(dong, endsWith('₫'));
+      expect(1234.5.toCurrency(locale: 'en_US', symbol: r'$', decimalDigits: 2), r'$1,234.50');
+    });
+
+    test('clampRange bounds on both sides and passes the middle through', () {
+      expect(5.clampRange(0, 10), 5);
+      expect((-3).clampRange(0, 10), 0);
+      expect(42.clampRange(0, 10), 10);
+      // The boundaries themselves are inside the range, not clamped away.
+      expect(0.clampRange(0, 10), 0);
+      expect(10.clampRange(0, 10), 10);
+      expect(2.5.clampRange(0, 1), 1);
     });
   });
 
-  group('PageRequest', () {
-    test('next advances and first resets', () {
-      const request = PageRequest(query: 'abc');
-      expect(request.isFirstPage, isTrue);
-      expect(request.next().page, 2);
-      // The query survives paging — losing it silently returns the wrong rows.
-      expect(request.next().query, 'abc');
-      expect(request.next().next().first().page, 1);
-    });
-  });
+  // `PagedList` and `PageRequest` moved to paged_list_test.dart — they are
+  // pagination, not extensions, and they now carry the merge/cursor cases that do
+  // not fit in a file about `String`, `DateTime` and `num`.
 }

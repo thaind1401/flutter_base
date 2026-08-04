@@ -72,6 +72,24 @@ final class AppEnvironmentConfig extends Equatable {
   final Duration receiveTimeout;
   final Duration sendTimeout;
   final bool enableNetworkLogging;
+
+  /// **Nothing reads this yet, and it is `true` in production.**
+  ///
+  /// The flag is a placeholder for a pin this base does not implement:
+  /// `core_network` never consults it, `ApiClient` leaves Dio on its default
+  /// adapter, and the app trusts whatever CAs the OS trusts. A reader who finds
+  /// `enableCertificatePinning: env.isProduction` above and concludes that
+  /// production traffic is pinned would be wrong — which is the exact failure
+  /// CLAUDE.md warns about, a safety net asserted but not built, and worse than
+  /// no flag at all because it stops the next reader from checking.
+  ///
+  /// It is kept rather than deleted because the decision it represents is real
+  /// and belongs in the environment config; it is documented rather than left
+  /// bare because a silent `true` is a lie. Wiring it up means honouring it in
+  /// **two** places — where `ApiClient` builds its clients, and in
+  /// `resetConnectionPool()`, which replaces both adapters after a network
+  /// change and would otherwise drop the pin the first time the user leaves
+  /// wifi. See "Known gaps" in the README.
   final bool enableCertificatePinning;
 
   /// When true, `SignInUseCase` succeeds without calling the backend and

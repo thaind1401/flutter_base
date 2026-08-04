@@ -8,10 +8,13 @@ final class NullSessionStore implements SessionStore {
   AuthSession? get current => null;
 
   @override
-  Stream<SessionStatus> get changes => const Stream.empty();
+  Stream<SessionSnapshot> get changes => const Stream.empty();
 
   @override
   SessionStatus get status => SessionStatus.unknown;
+
+  @override
+  SessionSnapshot get snapshot => const SessionSnapshot.unknown();
 
   @override
   Future<Result<AuthSession?>> restore() async => const Ok(null);
@@ -43,6 +46,10 @@ final class NullAuthRepository implements AuthRepository {
   Future<Result<AuthUser>> currentUser() async => const Err(UnexpectedFailure());
 }
 
-/// The real use case over null collaborators, rather than a fake use case.
-/// Exercising the production class keeps the test honest about its wiring.
+/// The real use cases over null collaborators, rather than fake use cases.
+/// Exercising the production classes keeps the test honest about its wiring.
 SignOutUseCase nullSignOutUseCase() => SignOutUseCase(const NullAuthRepository(), NullSessionStore());
+
+WatchSessionUseCase nullWatchSessionUseCase() => WatchSessionUseCase(NullSessionStore());
+
+StartSessionUseCase nullStartSessionUseCase() => StartSessionUseCase(NullSessionStore());
