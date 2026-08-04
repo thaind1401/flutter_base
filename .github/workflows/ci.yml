@@ -35,7 +35,7 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # The SDK version lives in .fvmrc and is read from it, not repeated here.
       # A hardcoded version in this file is a second copy of the pin, and the
@@ -49,7 +49,7 @@ jobs:
           flutter-version: ${{ steps.sdk.outputs.version }}
           cache: true
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: temurin
@@ -73,7 +73,7 @@ jobs:
       # in the first place.
       - name: Upload golden diffs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: golden-failures
           path: core/core_ui/test/failures/
