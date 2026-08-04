@@ -93,6 +93,11 @@ Dependencies flow downward only and are **enforced** by
    `BaseRepository.guard`. A `try/catch` in a use case or a bloc is a bug.
 2. **Use case parameters are typed records** — `typedef P = ({String id});` —
    never `Map<String, dynamic>`.
+   The errors that never enter that pipeline — a `build` that throws, a gesture
+   callback, a platform channel, an unawaited future — are caught by
+   `GlobalErrorHandler` in `app/lib/app/error/` and reported through `AppLogger`.
+   That is the crash-reporter seam; it is **not** a safety net that makes a
+   `try/catch` in a bloc acceptable.
 3. **Blocs depend on use cases only.** Never a repository, `Dio`, or storage.
 4. **One-shot outcomes are effects**, emitted with `emitEffect`, not state flags.
 5. **A feature never imports another feature.** Use a contract in a core package.

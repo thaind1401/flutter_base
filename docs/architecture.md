@@ -84,6 +84,64 @@ internal detail. The exception is `BusinessFailure`, where the rule that was
 violated is only known to the backend — override `FailurePresenter.businessMessage`
 to map specific codes to your own copy.
 
+### The errors that never enter that pipeline
+
+The chain above is for failures the code *expected*. It cannot cover a `build`
+that throws, a gesture callback that raised, a platform channel that rejected,
+or a future nobody awaited — none of them pass through a `try`, so none of them
+ever become a `Result`.
+
+`GlobalErrorHandler.install` (`app/lib/app/error/`) is where those land. It sets
+two hooks, before `configureDependencies()` so an error composing the container
+is caught too:
+
+- **`FlutterError.onError`** — framework errors. It calls
+  `FlutterError.presentError` first, so the red screen and the console dump in
+  debug are unchanged, then reports. Details the framework marked `silent` are
+  dropped, or one scrolling list over a flaky connection fills a crash report.
+- **`PlatformDispatcher.onError`** — uncaught async errors, returning `true` so
+  the platform's default handler does not terminate the isolate.
+
+Both report through the registered `AppLogger`. That is the point: `AppLogger`
+was always described as the seam you swap for Crashlytics or Sentry "without
+touching a single call site", but until these hooks existed the promise held
+only for errors somebody had remembered to log — `FlutterError.onError` defaults
+to console-in-debug and silence in release, and `PlatformDispatcher.onError`
+defaults to *discarding* the error. Crashes were the one category the seam
+missed.
+
+`install` takes a logger **supplier**, not an instance, because it runs before
+the container exists and survives the container being reset.
+
+Two things it deliberately does not do, both for reasons worth keeping:
+
+- **No `runZonedGuarded`.** `PlatformDispatcher.onError` catches everything the
+  zone did, without the trap that the zone calling `ensureInitialized()` must be
+  the zone calling `runApp`.
+- **No `ErrorWidget.builder` override.** Reporting is already covered — a widget
+  that throws in `build` reaches `FlutterError.onError`. What is left is
+  cosmetic, and the replacement renders in place of a subtree that just failed,
+  so it cannot safely read `context.colors` or `CoreL10n.of(context)`: the
+  design system or the `Localizations` scope may be what broke, and an error
+  widget that throws is an unbreakable loop.
+
+### When bootstrap itself fails
+
+`main` wraps `Bootstrap.run()` and falls back to `BootFailureApp`. Without it
+that case is a black screen forever: `runApp` is never reached, the engine holds
+the launch image, and the next launch takes the same path — force-quitting
+changes nothing.
+
+It is not hypothetical. iOS refuses keychain access before the device's first
+unlock after a reboot, so a push-launched cold start can fail reading the
+session. `app_smoke_test.dart` cannot see it, because it mocks all three
+platform channels.
+
+`BootFailureApp` resolves nothing from `getIt` — `AppTheme` and
+`AppLocalizationsSetup` are plain statics — and its retry calls `getIt.reset()`
+first, because `init()` over a partially populated container throws on the first
+duplicate and would report a registration error instead of the real fault.
+
 ---
 
 ## State

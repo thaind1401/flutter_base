@@ -195,9 +195,52 @@ bundle ids per environment — so all three can be installed side by side — se
 ## Known gaps
 
 Deliberately absent, because they are project decisions rather than base
-architecture: crash reporting, analytics, push notifications, deep links, and
+architecture: a crash *reporter*, analytics, push notifications, deep links, and
 biometric login. `Bootstrap.runDeferredStartup` is where they belong, and it
 already runs after the first frame so adding one will not slow cold start.
+
+The *collection* side is not absent. `GlobalErrorHandler` installs
+`FlutterError.onError` and `PlatformDispatcher.onError` and reports both through
+the registered `AppLogger`, so adopting Crashlytics or Sentry is the one-line
+`AppModule` change `AppLogger` always advertised — not a hunt for the places
+Flutter hands out errors. See "Failure handling end to end" in
+`docs/architecture.md`.
+
+**Transport security is the platform default, and that is a decision you have
+not made yet.** There is no certificate pinning: `ApiClient` leaves Dio on its
+default adapter, so the app trusts whatever the OS trusts, and a device with a
+user-installed CA — a corporate MDM profile, or an attacker who talked someone
+through installing one — can read every request. There is no root/jailbreak
+detection either.
+
+Both are genuinely project decisions: a pin needs *your* certificate and a
+rotation plan, and a pin that outlives the cert it names is an app that cannot
+reach its own backend until the store approves an update. What is not a project
+decision is knowing the gap exists — so it is written here rather than left to
+be discovered during a penetration test.
+
+**Worse than absent: `AppEnvironmentConfig.enableCertificatePinning` is `true`
+in production and is read by nothing.** `core_network` never consults it, and
+two tests assert its value in dev and staging, so it looks both wired and
+covered. Anyone auditing this base by reading the config would conclude
+production traffic is pinned. It is not. The field now carries a doc comment
+saying so; the alternative is deleting it, which is a call for whoever owns
+this project rather than something a base should decide.
+
+Two more things to know before adding a pin, both easy to get wrong here:
+
+- **There are two places to apply it, not one.** `ApiClient` holds two clients
+  (`_dio` and `_raw`), and `resetConnectionPool()` *replaces* their adapters with
+  a fresh `IOHttpClientAdapter` after a network change — VPN on, wifi to
+  cellular. A pin installed only at construction is silently discarded the first
+  time the user walks out of wifi, and every request after that is unpinned with
+  nothing in the logs to say so.
+- **`badCertificate` is already routed correctly.** `DioFailureMapper` maps it to
+  a `ServerFailure` rather than a `NetworkFailure`, with a comment saying why: a
+  certificate mismatch can be an interception attempt, and "check your
+  connection" is the wrong thing to tell the user. So a pin that starts failing
+  surfaces as an error rather than as a retry loop — the base notices bad
+  certificates, it just does not pin.
 
 Present but needing your values before they do anything:
 
@@ -219,7 +262,26 @@ Genuinely partial:
   weight. Closing that means committing a font binary and a `FontLoader` — worth
   doing once this project picks a brand font. `core_ui/test/golden_test.dart`
   spells out exactly what each snapshot does and does not prove.
-- **`app` is the weakest package at 64% coverage** — it is the composition root,
-  and what covers it is `app_smoke_test.dart` booting the real app rather than
-  unit tests of glue. The per-package floor in `tools/coverage_summary.dart` sits
-  at 60 for that reason, with the next step written down.
+- **`core_arch` is now the weakest package at 79% coverage.** `app` used to hold
+  that spot, and the reason it moved is worth keeping: the workspace total was
+  a healthy 87% while `settings_screen.dart` sat at *one covered line out of
+  forty* — a whole screen, owning the sign-out confirmation and a banner that
+  prints the backend URL, tested by nothing. A percentage averages that away.
+  The per-package floor in `tools/coverage_summary.dart` is what makes a gap
+  like that surface at all, and it is still worth reading the per-file numbers
+  rather than the headline.
+- **Rule 5 has never actually been tested.** "A feature never imports another
+  feature — use a contract in a core package" is enforced by
+  `tools/check_dependencies.dart`, but `features/` holds exactly one package, so
+  the rule has never had to *stop* anything. What the tool proves is that the
+  import is blocked. What nobody has proved is the other half — that routing the
+  need through a core contract is actually sufficient — because that question
+  only arises when a second feature needs something `feature_auth` owns.
+
+  Deliberately not closed by adding a filler feature. That is the mistake
+  ADR-0007 already corrected once: the sample mini-app was deleted because it
+  did not earn its place, and a `feature_profile` written only to exercise a
+  lint would be the same package every project inherits and deletes. The first
+  real second feature is what closes this — expect to discover something then,
+  and expect the fix to be an entry in `allowedDependencies` plus a contract,
+  not a relaxed rule.

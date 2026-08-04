@@ -19,5 +19,8 @@
   "settingsSignOutConfirmTitle": "Đăng xuất?",
   "settingsSignOutConfirmMessage": "Bạn sẽ cần đăng nhập lại để tiếp tục.",
 
+  "bootFailureTitle": "Không thể khởi động ứng dụng",
+  "bootFailureMessage": "Đã xảy ra lỗi trong quá trình khởi động. Vui lòng thử lại.",
+
   "settingsEnvironment": "Môi trường: {name}"
 }

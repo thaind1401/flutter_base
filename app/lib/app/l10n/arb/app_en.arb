@@ -19,6 +19,12 @@
   "settingsSignOutConfirmTitle": "Sign out?",
   "settingsSignOutConfirmMessage": "You will need to sign in again to continue.",
 
+  "bootFailureTitle": "The app could not start",
+  "@bootFailureTitle": {
+    "description": "Shown when Bootstrap.run() throws, in place of the app. The alternative is a black screen the user cannot get out of."
+  },
+  "bootFailureMessage": "Something went wrong while starting up. Please try again.",
+
   "settingsEnvironment": "Environment: {name}",
   "@settingsEnvironment": {
     "description": "Debug banner naming the build flavor. Hidden in production.",

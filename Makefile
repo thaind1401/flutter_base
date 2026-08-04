@@ -198,7 +198,16 @@ check-deps: ## Fail if any package imports across a forbidden layer boundary
 # SDK reached this repo that way, along with ten generated files that rule 9
 # says are never committed and three env files the ignore list calls secrets.
 # This target is what makes that removal stick.
-ARTIFACT_PATTERN := ^\.dart_tool/|^\.fvm/|(^|/)build/|(^|/)coverage/|\.g\.dart$$|\.config\.dart$$|\.module\.dart$$|l10n/generated/|env_config/.*/dart_defines\.json$$
+# `.flutter-plugins-dependencies` is here because three of them were tracked
+# while this check stayed green — the pattern decides what counts, and a name it
+# does not list is invisible no matter how obviously generated the file is. That
+# one says so on its own first line ("do not edit or check into version
+# control"), `.gitignore` had listed it since before this check existed, and it
+# was tracked anyway: exactly the trap rule 9 describes, where ignoring a file
+# git already follows does nothing. Each one also holds absolute `.pub-cache`
+# paths and a `date_created`, so they carry the committer's username and churn
+# on every `pub get`.
+ARTIFACT_PATTERN := ^\.dart_tool/|^\.fvm/|(^|/)build/|(^|/)coverage/|\.g\.dart$$|\.config\.dart$$|\.module\.dart$$|l10n/generated/|env_config/.*/dart_defines\.json$$|(^|/)\.flutter-plugins(-dependencies)?$$
 
 check-props: ## Fail if an Equatable class omits a field from props
 	@# Rule 14's teeth. A field outside `props` is invisible to `==`, so

@@ -1,10 +1,12 @@
 import 'package:app/app/app.dart';
 import 'package:app/app/bootstrap.dart';
 import 'package:app/app/di/injection.dart';
+import 'package:app/app/l10n/app_localizations.dart';
 import 'package:app/app/theme/theme_mode_controller.dart';
 import 'package:core_kit/core_kit.dart';
 import 'package:core_storage/core_storage.dart';
 import 'package:core_ui/core_ui.dart';
+import 'package:feature_auth/feature_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -68,11 +70,13 @@ void main() {
     // useful in both directions: it fails if a build with the bypass on still
     // shows login, and if a build with it off silently skips login — which is
     // the one that would matter in production.
+    final loginTitle = (await _authCopy()).loginTitle;
+
     if (getIt<AppEnvironmentConfig>().devAuthBypass) {
-      expect(find.text('Welcome back'), findsNothing, reason: 'the bypass must skip login entirely');
+      expect(find.text(loginTitle), findsNothing, reason: 'the bypass must skip login entirely');
       expect(find.text('Dev Bypass'), findsOneWidget, reason: 'the seeded session should land on home');
     } else {
-      expect(find.text('Welcome back'), findsOneWidget);
+      expect(find.text(loginTitle), findsOneWidget);
     }
   });
 
@@ -114,4 +118,27 @@ void main() {
 
     await tester.pumpAndSettle();
   });
+}
+
+/// The login copy, in whatever language the *device* is set to.
+///
+/// The flavor is not the only thing about this test that varies per machine —
+/// the locale does too, and the boot assertion above used to hardcode "Welcome
+/// back". That passes on an English handset and fails on every other one, with
+/// a message about a missing widget that points at the router rather than at
+/// the assertion. It cost a real debugging session on a Vietnamese phone.
+///
+/// `app/test/app_smoke_test.dart` can hardcode the string safely, because a
+/// widget test resolves to the template language no matter what the host is
+/// set to. On a device there is no such guarantee, so the expectation is
+/// resolved the same way the app resolves it.
+Future<AuthL10n> _authCopy() {
+  final device = WidgetsBinding.instance.platformDispatcher.locale;
+  final locale = AppLocalizationsSetup.supportedLocales.firstWhere(
+    (supported) => supported.languageCode == device.languageCode,
+    // Matches Flutter's own fallback: an unsupported device language gets the
+    // template locale, which is what the app itself will be rendering.
+    orElse: () => AppLocalizationsSetup.supportedLocales.first,
+  );
+  return AuthL10n.delegate.load(locale);
 }
