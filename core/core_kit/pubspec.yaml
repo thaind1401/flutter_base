@@ -14,7 +14,7 @@ resolution: workspace
 dependencies:
   equatable: ^2.0.5
   meta: ^1.12.0
-  formz: ^0.8.0
+  formz: ^0.8.1
   intl: ^0.20.2
 
 dev_dependencies:
